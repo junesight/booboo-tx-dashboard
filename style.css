@@ -178,9 +178,10 @@ body {
 
 @media (min-width: 769px) {
   .board-grid {
-    grid-template-columns: 120px 4px 1fr 4px 1fr;
-    column-gap: 2rem;
-    row-gap: 1.25rem;
+    display: grid;
+    grid-template-columns: 95px 2px 1fr 2px 1fr;
+    column-gap: 0.8rem;
+    row-gap: 0.8rem;
     align-items: center; /* Prevent slots from stretching vertically and causing width expansion */
   }
 
@@ -201,7 +202,7 @@ body {
   .vertical-divider {
     display: block;
     background-color: #cbd5e1;
-    width: 4px;
+    width: 2px;
     height: 100%;
     justify-self: center;
     align-self: stretch; /* Explicitly stretch divider lines to full row height */
@@ -219,8 +220,8 @@ body {
 
   /* Apply vertical padding to elements to replace row-gap in desktop grid */
   .board-grid > * {
-    padding-top: 1.2rem;
-    padding-bottom: 1.2rem;
+    padding-top: 0.8rem;
+    padding-bottom: 0.8rem;
   }
 
   /* Do not apply vertical padding to line elements to keep them full height */
@@ -231,6 +232,24 @@ body {
 
   .grid-header {
     padding-top: 0;
+    padding-bottom: 1rem !important;
+  }
+}
+
+@media (min-width: 1025px) {
+  .board-grid {
+    grid-template-columns: 120px 4px 1fr 4px 1fr;
+    column-gap: 2rem;
+    row-gap: 1.25rem;
+  }
+  .vertical-divider {
+    width: 4px;
+  }
+  .board-grid > * {
+    padding-top: 1.2rem;
+    padding-bottom: 1.2rem;
+  }
+  .grid-header {
     padding-bottom: 1.5rem !important;
   }
 }
@@ -1472,11 +1491,6 @@ body {
 
 /* 2nd Floor Tab View Alignment Override */
 @media (min-width: 769px) {
-  body[data-active-tab="floor2"] #panel-floor2 .board-grid {
-    grid-template-columns: 120px 1fr;
-    width: calc(50% + 40px);
-    margin: 0 auto;
-  }
   body[data-active-tab="floor2"] #panel-floor2 .second-floor-header,
   body[data-active-tab="floor2"] #panel-floor2 .slots-container[data-ward="secondFloor"] {
     grid-column: 2 !important;
@@ -1485,5 +1499,43 @@ body {
   }
   body[data-active-tab="floor2"] #panel-floor2 .vertical-divider {
     display: none !important;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  body[data-active-tab="floor2"] #panel-floor2 .board-grid {
+    grid-template-columns: 95px 1fr;
+    width: 85%;
+    margin: 0 auto;
+  }
+}
+
+@media (min-width: 1025px) {
+  body[data-active-tab="floor2"] #panel-floor2 .board-grid {
+    grid-template-columns: 120px 1fr;
+    width: calc(50% + 40px);
+    margin: 0 auto;
+  }
+}
+
+/* Tablet-specific styles (769px to 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  body[data-active-tab="all"] .director-tag {
+    font-size: 0.95rem;
+    padding: 0.35rem 0.45rem;
+  }
+  body[data-active-tab="all"] .leave-time-btn {
+    font-size: 0.65rem;
+    padding: 0.18rem 0.35rem;
+  }
+  body[data-active-tab="all"] .slots-container {
+    padding: 0.45rem;
+    gap: 0.4rem;
+  }
+  body[data-active-tab="all"] .app-container {
+    padding: 1rem;
+  }
+  body[data-active-tab="all"] .board-panel {
+    padding: 1rem;
   }
 }
