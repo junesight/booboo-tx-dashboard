@@ -176,7 +176,7 @@ body {
   align-items: center;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 769px) {
   .board-grid {
     grid-template-columns: 120px 4px 1fr 4px 1fr;
     column-gap: 2rem;
@@ -277,7 +277,7 @@ body {
   border-radius: 4px;
 }
 
-@media (max-width: 1023px) {
+@media (max-width: 768px) {
   .left-header, .director-left-cell {
     display: none !important; /* Hide left labels on mobile stack */
   }
@@ -1250,7 +1250,7 @@ body {
 }
 
 /* Base Vertical Divider Style (Hidden on mobile stack) */
-@media (max-width: 1023px) {
+@media (max-width: 768px) {
   .vertical-divider {
     display: none;
   }
@@ -1384,7 +1384,7 @@ body {
 }
 
 /* 16:9 Viewport Height Optimization for '전체보기' (All View) - Middle Ground Spacing */
-@media (min-width: 1024px) {
+@media (min-width: 769px) {
   body[data-active-tab="all"] .app-container {
     padding: 1.2rem 2rem;
   }
@@ -1443,7 +1443,7 @@ body {
 }
 
 /* 2nd Floor Tab View Alignment Override */
-@media (min-width: 1024px) {
+@media (min-width: 769px) {
   body[data-active-tab="floor2"] #panel-floor2 .board-grid {
     grid-template-columns: 120px 1fr;
     width: calc(50% + 40px);

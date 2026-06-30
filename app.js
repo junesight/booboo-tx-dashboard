@@ -151,6 +151,22 @@ function initApp() {
     }
   }
 
+  // Normalize old placenta values ('자하거<br>디나' -> '자하거/디나')
+  const wards = ['female', 'male', 'secondFloor'];
+  wards.forEach(w => {
+    if (state[w]) {
+      Object.keys(state[w]).forEach(d => {
+        if (Array.isArray(state[w][d])) {
+          state[w][d] = state[w][d].map(val => {
+            if (val === '자하거<br>디나') return '자하거/디나';
+            if (val === '자하거<br>디나_progress') return '자하거/디나_progress';
+            return val;
+          });
+        }
+      });
+    }
+  });
+
   // Ensure all doctor name keys are present in slots, leave times, off duty status
   allDocs.forEach(d => {
     if (!state.female[d]) state.female[d] = Array(8).fill(null);
@@ -1140,17 +1156,17 @@ function openModal(ward, docName, index) {
     { name: '상담', class: 'btn-consultation' },
     { name: '추나', class: 'btn-chuna' },
     { name: '초음파', class: 'btn-ultrasound' },
-    { name: '자하거<br>디나', class: 'btn-placenta' },
+    { name: '자하거/디나', class: 'btn-placenta', displayName: '자하거<br>디나' },
     { name: '린다이어트', class: 'btn-diet' }
   ];
 
   specialOptions.forEach(opt => {
     const btn = document.createElement('button');
     btn.className = `special-btn ${opt.class}`;
-    if (cleanCurrentVal === opt.name || (opt.name === '자하거<br>디나' && cleanCurrentVal === '자하거/디나')) {
+    if (cleanCurrentVal === opt.name) {
       btn.classList.add('active');
     }
-    btn.innerHTML = opt.name;
+    btn.innerHTML = opt.displayName ? opt.displayName : opt.name;
     btn.addEventListener('click', () => selectBedNumber(opt.name));
     modalSpecialGrid.appendChild(btn);
   });
