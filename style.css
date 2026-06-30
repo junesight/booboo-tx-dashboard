@@ -80,6 +80,13 @@ body {
   flex-wrap: nowrap;
 }
 
+.logo-text-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+}
+
 .logo-icon {
   font-size: 2rem;
 }
@@ -1420,6 +1427,9 @@ body {
     text-align: center;
     flex-wrap: wrap;
   }
+  .logo-text-group {
+    align-items: center;
+  }
   .header-logo h1 {
     white-space: normal;
   }
@@ -1540,8 +1550,8 @@ body {
     width: 100% !important;
   }
 
-  .header-logo #live-clock {
-    display: none !important;
+  .logo-text-group {
+    align-items: center !important;
   }
 
   .tabs-container {
