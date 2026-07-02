@@ -255,15 +255,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
     min-width: 0;
   }
 
-  /* Make second floor ward section compact, matching female section on PC */
-  .second-floor-ward-section {
-    max-width: calc(50% - 1rem) !important;
-  }
 
-  /* Center second floor ward section when in floor2 view */
-  body[data-active-tab="floor2"] .second-floor-ward-section {
-    margin: 0 auto !important;
-  }
 
   /* On PC (desktop), hide the male ward doctor tags visually but preserve layout space */
   .male-ward-section .left-header,
@@ -281,6 +273,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
 @media (min-width: 1025px) {
   .board-grid {
     grid-template-columns: 100px 4px 1fr !important;
+    grid-auto-rows: 92px !important;
     column-gap: 1.25rem;
     row-gap: 1.25rem;
   }
@@ -308,7 +301,8 @@ body[data-active-tab="floor2"] #panel-floor2 {
   }
 
   body[data-active-tab="all"] .female-ward-section,
-  body[data-active-tab="floor1"] .female-ward-section {
+  body[data-active-tab="floor1"] .female-ward-section,
+  body[data-active-tab="all"] .second-floor-ward-section {
     flex: 0 0 calc(50% + 38px - 1rem) !important;
     width: calc(50% + 38px - 1rem) !important;
     max-width: calc(50% + 38px - 1rem) !important;
@@ -318,6 +312,12 @@ body[data-active-tab="floor2"] #panel-floor2 {
     flex: 0 0 calc(50% - 38px - 1rem) !important;
     width: calc(50% - 38px - 1rem) !important;
     max-width: calc(50% - 38px - 1rem) !important;
+  }
+  body[data-active-tab="floor2"] .second-floor-ward-section {
+    flex: 0 0 calc(50% + 38px - 1rem) !important;
+    width: calc(50% + 38px - 1rem) !important;
+    max-width: calc(50% + 38px - 1rem) !important;
+    margin: 0 auto !important;
   }
 }
 
@@ -1591,6 +1591,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
   }
   body[data-active-tab="all"] .board-grid {
     row-gap: 0.6rem;
+    grid-auto-rows: 82px !important;
   }
   body[data-active-tab="all"] .board-grid > * {
     padding-top: 0.6rem;
