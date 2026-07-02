@@ -1678,11 +1678,6 @@ body[data-active-tab="floor2"] #panel-floor2 {
     flex: none !important;
   }
 
-  /* Center 2nd floor ward section and constraint width to 85% on tablet when floor2 view is active */
-  body[data-active-tab="floor2"] .second-floor-ward-section {
-    max-width: 85% !important;
-    margin: 0 auto !important;
-  }
 
   /* Show male ward doctor tags on tablet */
   .male-ward-section .left-header,
