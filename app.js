@@ -427,13 +427,18 @@ function updateUI() {
       orderVal = 10 + offDutyCount1;
     }
     
-    const cell = document.querySelector(`#panel-floor1 .director-left-cell[data-row="${r}"]`);
+    const cellF = document.querySelector(`#panel-floor1 .director-left-cell[data-row="${r}"][data-ward="female"]`);
+    const cellM = document.querySelector(`#panel-floor1 .director-left-cell[data-row="${r}"][data-ward="male"]`);
     const fContainer = document.querySelector(`.slots-container[data-ward="female"][data-director="${r}"]`);
     const mContainer = document.querySelector(`.slots-container[data-ward="male"][data-director="${r}"]`);
     
-    if (cell) {
-      cell.style.order = orderVal;
-      cell.setAttribute('draggable', activeTab !== 'all' ? 'true' : 'false');
+    if (cellF) {
+      cellF.style.order = orderVal;
+      cellF.setAttribute('draggable', activeTab !== 'all' ? 'true' : 'false');
+    }
+    if (cellM) {
+      cellM.style.order = orderVal;
+      cellM.setAttribute('draggable', activeTab !== 'all' ? 'true' : 'false');
     }
     if (fContainer) fContainer.style.order = orderVal;
     if (mContainer) mContainer.style.order = orderVal;
@@ -466,36 +471,39 @@ function updateUI() {
 
   // 3. Update 1st Floor tags and leave time buttons
   for (let r = 1; r <= 4; r++) {
-    const tag = document.querySelector(`#panel-floor1 .director-tag[data-row="${r}"]`);
-    const leaveBtn = document.querySelector(`#panel-floor1 .leave-time-btn[data-row="${r}"]`);
     const docName = renderDirectorsFloor1[r];
     const isOff = offDutyDirectors[docName];
-    const cell = tag?.closest('.director-left-cell');
-    
-    if (tag) {
-      tag.classList.remove('dr-bobin', 'dr-junhyun', 'dr-youngyun', 'dr-jihyun', 'dr-taeyun', 'dr-duho', 'off-duty');
-      if (cell) cell.classList.remove('dr-bobin', 'dr-junhyun', 'dr-youngyun', 'dr-jihyun', 'dr-taeyun', 'dr-duho', 'off-duty');
+
+    ['female', 'male'].forEach(ward => {
+      const tag = document.querySelector(`#panel-floor1 .director-tag[data-row="${r}"][data-ward="${ward}"]`);
+      const leaveBtn = document.querySelector(`#panel-floor1 .leave-time-btn[data-row="${r}"][data-ward="${ward}"]`);
+      const cell = tag?.closest('.director-left-cell');
       
-      if (isOff) {
-        tag.innerHTML = `${docName}<br><span style="font-size: 0.8rem; font-weight: 500; opacity: 0.85;">(퇴근)</span>`;
-        tag.classList.add('off-duty');
-        if (cell) cell.classList.add('off-duty');
-      } else {
-        tag.textContent = docName;
-        applyDoctorClass(tag, cell, docName);
+      if (tag) {
+        tag.classList.remove('dr-bobin', 'dr-junhyun', 'dr-youngyun', 'dr-jihyun', 'dr-taeyun', 'dr-duho', 'off-duty');
+        if (cell) cell.classList.remove('dr-bobin', 'dr-junhyun', 'dr-youngyun', 'dr-jihyun', 'dr-taeyun', 'dr-duho', 'off-duty');
+        
+        if (isOff) {
+          tag.innerHTML = `${docName}<br><span style="font-size: 0.8rem; font-weight: 500; opacity: 0.85;">(퇴근)</span>`;
+          tag.classList.add('off-duty');
+          if (cell) cell.classList.add('off-duty');
+        } else {
+          tag.textContent = docName;
+          applyDoctorClass(tag, cell, docName);
+        }
       }
-    }
-    
-    if (leaveBtn) {
-      const val = leaveTimes[docName];
-      leaveBtn.textContent = val ? val : '퇴근시간';
-      leaveBtn.classList.remove('active', 'off-duty');
-      if (isOff) {
-        leaveBtn.classList.add('off-duty');
-      } else if (val) {
-        leaveBtn.classList.add('active');
+      
+      if (leaveBtn) {
+        const val = leaveTimes[docName];
+        leaveBtn.textContent = val ? val : '퇴근시간';
+        leaveBtn.classList.remove('active', 'off-duty');
+        if (isOff) {
+          leaveBtn.classList.add('off-duty');
+        } else if (val) {
+          leaveBtn.classList.add('active');
+        }
       }
-    }
+    });
   }
 
   // 4. Update 2nd Floor tags and leave time buttons
@@ -1180,7 +1188,7 @@ function isArrowItem(val) {
         const directorId = cell.dataset.row;
         const panel = cell.closest('.board-panel');
         const isFloor1 = panel.id === 'panel-floor1';
-        targetWard = isFloor1 ? dragSource.ward : 'secondFloor';
+        targetWard = isFloor1 ? cell.dataset.ward : 'secondFloor';
         const tag = cell.querySelector('.director-tag');
         targetDoc = tag ? tag.textContent.replace('(퇴근)', '').trim() : null;
         

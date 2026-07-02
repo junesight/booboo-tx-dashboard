@@ -174,7 +174,7 @@ body {
   margin-bottom: 0;
 }
 
-/* 3-Column Board Grid Layout */
+/* 2-Column Board Grid Layout */
 .board-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -183,74 +183,66 @@ body {
   align-items: center;
 }
 
+/* Ward Section Layouts */
+.ward-section {
+  width: 100%;
+}
+
 @media (min-width: 769px) {
   .board-grid {
     display: grid;
-    grid-template-columns: 95px 2px 1fr 2px 1fr;
+    grid-template-columns: 95px 1fr !important;
     column-gap: 0.8rem;
     row-gap: 0.8rem;
-    align-items: center; /* Prevent slots from stretching vertically and causing width expansion */
+    align-items: center;
   }
 
-  /* Explicit column positioning for elements */
-  .left-header, .director-left-cell {
-    grid-column: 1;
-  }
-
-  .female-header, .second-floor-header, .slots-container[data-ward="female"], .slots-container[data-ward="secondFloor"] {
-    grid-column: 3;
-  }
-
-  .male-header, .slots-container[data-ward="male"] {
-    grid-column: 5;
-  }
-
-  /* Vertical Divider Lines Centered */
-  .vertical-divider {
-    display: block;
-    background-color: #cbd5e1;
-    width: 2px;
-    height: 100%;
-    justify-self: center;
-    align-self: stretch; /* Explicitly stretch divider lines to full row height */
-  }
-
-  .vertical-divider.line-1 {
-    grid-column: 2;
-    grid-row: 1 / span 5;
-  }
-
-  .vertical-divider.line-2 {
-    grid-column: 4;
-    grid-row: 1 / span 5;
-  }
-
-  /* Apply vertical padding to elements to replace row-gap in desktop grid */
+  /* Apply vertical padding to elements */
   .board-grid > * {
     padding-top: 0.8rem;
     padding-bottom: 0.8rem;
-  }
-
-  /* Do not apply vertical padding to line elements to keep them full height */
-  .board-grid > .vertical-divider {
-    padding-top: 0;
-    padding-bottom: 0;
   }
 
   .grid-header {
     padding-top: 0;
     padding-bottom: 1rem !important;
   }
+
+  /* Floor 1 side-by-side desktop layout */
+  #panel-floor1 {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 2rem !important;
+    align-items: stretch !important;
+  }
+
+  .female-ward-section,
+  .male-ward-section {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* On PC (desktop), hide the male ward doctor tags to match 3-column look */
+  .male-ward-section .left-header,
+  .male-ward-section .director-left-cell {
+    display: none !important;
+  }
+
+  .male-ward-section .board-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .male-ward-section {
+    border-left: 2px solid #cbd5e1;
+    padding-left: 2rem;
+  }
 }
 
 @media (min-width: 1025px) {
   .board-grid {
-    grid-template-columns: 100px 4px 1fr 4px 1fr;
-    column-gap: 2rem;
+    grid-template-columns: 100px 1fr !important;
+    column-gap: 1.25rem;
     row-gap: 1.25rem;
-  }
-  .vertical-divider {
-    width: 4px;
   }
   .board-grid > * {
     padding-top: 1.2rem;
@@ -258,6 +250,9 @@ body {
   }
   .grid-header {
     padding-bottom: 1.5rem !important;
+  }
+  .male-ward-section {
+    border-left: 4px solid #cbd5e1;
   }
 }
 
@@ -1533,18 +1528,6 @@ body {
   }
 }
 
-/* 2nd Floor Tab View Alignment Override */
-@media (min-width: 769px) {
-  body[data-active-tab="floor2"] #panel-floor2 .second-floor-header,
-  body[data-active-tab="floor2"] #panel-floor2 .slots-container[data-ward="secondFloor"] {
-    grid-column: 2 !important;
-    width: 100% !important;
-    justify-self: stretch !important;
-  }
-  body[data-active-tab="floor2"] #panel-floor2 .vertical-divider {
-    display: none !important;
-  }
-}
 
 @media (min-width: 769px) and (max-width: 1024px) {
   body[data-active-tab="floor2"] #panel-floor2 .board-grid {
@@ -1632,9 +1615,40 @@ body {
     padding: 1rem !important;
   }
 
-  /* Grid layout overrides for 1st Floor on Tablet */
+  /* Grid layout overrides for Tablet */
+  #panel-floor1 {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1.5rem !important;
+  }
+
+  .female-ward-section,
+  .male-ward-section {
+    width: 100% !important;
+    flex: none !important;
+  }
+
+  /* Show male ward doctor tags on tablet */
+  .male-ward-section .left-header,
+  .male-ward-section .director-left-cell {
+    display: flex !important;
+  }
+
+  .male-ward-section .board-grid {
+    grid-template-columns: 80px 1fr !important;
+  }
+
+  .male-ward-section {
+    border-left: none !important;
+    padding-left: 0 !important;
+  }
+
+  .female-ward-section .board-grid {
+    grid-template-columns: 80px 1fr !important;
+  }
+
   .board-grid {
-    grid-template-columns: 80px 2px 1fr 2px 1fr !important;
+    grid-template-columns: 80px 1fr !important;
     column-gap: 0.6rem !important;
     row-gap: 0.6rem !important;
   }
