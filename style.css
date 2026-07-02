@@ -273,13 +273,8 @@ body[data-active-tab="floor2"] #panel-floor2 {
 @media (min-width: 1025px) {
   .board-grid {
     grid-template-columns: 100px 4px 1fr !important;
-    grid-auto-rows: 92px !important;
     column-gap: 1.25rem;
     row-gap: 1.5rem !important;
-  }
-  .board-grid > * {
-    padding-top: 0.15rem !important;
-    padding-bottom: 0.15rem !important;
   }
   .grid-header {
     padding-bottom: 1.5rem !important;
@@ -1590,8 +1585,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
     margin-bottom: 1.2rem;
   }
   body[data-active-tab="all"] .board-grid {
-    row-gap: 0.6rem;
-    grid-auto-rows: 82px !important;
+    row-gap: 0.4rem !important;
   }
   body[data-active-tab="all"] .board-grid > * {
     padding-top: 0.6rem;
