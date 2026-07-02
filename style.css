@@ -88,7 +88,9 @@ body {
 }
 
 .logo-icon {
-  font-size: 2rem;
+  font-size: 1.7rem;
+  margin-right: 0.3rem;
+  vertical-align: middle;
 }
 
 .header-logo h1 {
@@ -1584,7 +1586,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
 @media (min-width: 769px) and (max-width: 1024px) {
   .app-header {
     display: grid !important;
-    grid-template-columns: 120px 1fr 120px !important;
+    grid-template-columns: 180px 1fr 180px !important;
     grid-template-rows: auto auto !important;
     align-items: center !important;
     column-gap: 1rem !important;
@@ -1597,8 +1599,11 @@ body[data-active-tab="floor2"] #panel-floor2 {
   .header-logo {
     grid-column: 2 !important; /* Center column */
     grid-row: 1 !important;
-    justify-content: center !important;
+    justify-self: center !important;
+    display: flex !important;
+    flex-direction: column !important;
     align-items: center !important;
+    text-align: center !important;
     width: 100% !important;
   }
 
@@ -1616,23 +1621,26 @@ body[data-active-tab="floor2"] #panel-floor2 {
   }
 
   .header-status {
-    grid-column: 3 !important; /* Right column */
+    display: contents !important;
+  }
+
+  #connection-status {
+    grid-column: 1 !important; /* Left column */
     grid-row: 1 / span 2 !important;
+    justify-self: start !important;
     align-self: start !important;
-    justify-self: end !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important; /* Center-align indicator and buttons */
-    gap: 0.4rem !important;
-    margin-top: 0.1rem !important;
-    width: auto !important;
+    margin-top: 0.4rem !important;
   }
 
   .header-actions {
+    grid-column: 3 !important; /* Right column */
+    grid-row: 1 / span 2 !important;
+    justify-self: end !important;
+    align-self: start !important;
     display: flex !important;
     flex-direction: column !important;
     gap: 0.35rem !important;
-    width: 100% !important;
+    width: auto !important;
   }
 
   .header-actions button {
