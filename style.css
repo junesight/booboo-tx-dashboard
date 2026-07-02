@@ -1432,7 +1432,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
   width: fit-content;
 }
 
-@media (min-width: 1025px) {
+@media (min-width: 1201px) {
   .tabs-container {
     position: absolute;
     left: 50%;
@@ -1582,8 +1582,8 @@ body[data-active-tab="floor2"] #panel-floor2 {
 
 
 
-/* Tablet-specific styles (769px to 1024px) */
-@media (min-width: 769px) and (max-width: 1024px) {
+/* Header styles for Tablet & Mid-PC overlap (769px to 1200px) */
+@media (min-width: 769px) and (max-width: 1200px) {
   .app-header {
     display: grid !important;
     grid-template-columns: 140px 1fr 140px !important;
@@ -1653,7 +1653,10 @@ body[data-active-tab="floor2"] #panel-floor2 {
     font-size: 0.8rem !important;
     justify-content: center !important;
   }
+}
 
+/* Board layout overrides for Tablet (769px to 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
   .app-container {
     padding: 1rem !important;
   }
