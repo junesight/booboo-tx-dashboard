@@ -280,7 +280,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
 
 @media (min-width: 1025px) {
   .board-grid {
-    grid-template-columns: 100px 1fr !important;
+    grid-template-columns: 100px 4px 1fr !important;
     column-gap: 1.25rem;
     row-gap: 1.25rem;
   }
@@ -294,12 +294,27 @@ body[data-active-tab="floor2"] #panel-floor2 {
   .male-ward-section {
     border-left: 4px solid #cbd5e1;
   }
+  .male-ward-section .vertical-divider {
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
 }
 
-/* Vertical line between doctor tags column and slots */
-.director-left-cell,
-.left-header {
-  border-right: 2px solid #cbd5e1 !important;
+/* Vertical line (Divider) between doctor tags column and slots */
+.vertical-divider {
+  display: none;
+  background-color: #cbd5e1;
+  grid-column: 2;
+  grid-row: 1 / span 5;
+  align-self: stretch;
+  justify-self: center;
+}
+
+@media (min-width: 1025px) {
+  .vertical-divider {
+    display: block;
+    width: 4px;
+  }
 }
 
 /* Grid Headers */
@@ -1690,7 +1705,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
   }
 
   .male-ward-section .board-grid {
-    grid-template-columns: 80px 1fr !important;
+    grid-template-columns: 80px 2px 1fr !important;
   }
 
   .male-ward-section {
@@ -1699,13 +1714,23 @@ body[data-active-tab="floor2"] #panel-floor2 {
   }
 
   .female-ward-section .board-grid {
-    grid-template-columns: 80px 1fr !important;
+    grid-template-columns: 80px 2px 1fr !important;
   }
 
   .board-grid {
-    grid-template-columns: 80px 1fr !important;
+    grid-template-columns: 80px 2px 1fr !important;
     column-gap: 0.6rem !important;
     row-gap: 0.6rem !important;
+  }
+
+  .vertical-divider {
+    display: block !important;
+    width: 2px !important;
+  }
+
+  .male-ward-section .vertical-divider {
+    visibility: visible !important;
+    pointer-events: auto !important;
   }
 
   /* Compact layout for doctor tags on ALL tabs in Tablet view */
