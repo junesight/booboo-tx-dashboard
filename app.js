@@ -84,6 +84,14 @@ let dragSource = {
   index: null
 };
 
+// Track pending delete slot for safety confirmation (3-second window)
+let pendingDeleteSlot = {
+  ward: null,
+  docName: null,
+  index: null,
+  timerId: null
+};
+
 // Track drag type ('magnet' | 'row') and drag source row index/floor
 let dragType = null; // 'magnet' | 'row'
 let dragSourceRow = null; // 1 | 2 | 3 | 4
@@ -614,7 +622,7 @@ function updateUI() {
 // Update individual slot element
 function updateSlotDisplay(slotEl, val, index) {
   // Reset all classes related to value rendering
-  slotEl.classList.remove('occupied', 'opt-ultrasound', 'opt-consultation', 'opt-chuna', 'opt-diet', 'opt-divider', 'opt-arrow', 'opt-meal', 'opt-placenta', 'in-progress');
+  slotEl.classList.remove('occupied', 'opt-ultrasound', 'opt-consultation', 'opt-chuna', 'opt-diet', 'opt-divider', 'opt-arrow', 'opt-meal', 'opt-placenta', 'in-progress', 'delete-confirm');
   
   if (val !== null) {
     let isProgress = false;
@@ -686,6 +694,13 @@ function updateSlotDisplay(slotEl, val, index) {
     }
     
     slotEl.innerHTML = `<div class="${magnetClass}" draggable="true">${displayVal}</div>`;
+    
+    // Check if this slot is pending delete confirmation
+    if (pendingDeleteSlot.ward === slotEl.getAttribute('data-ward') &&
+        pendingDeleteSlot.docName === slotEl.getAttribute('data-doc') &&
+        parseInt(slotEl.getAttribute('data-index'), 10) === index) {
+      slotEl.classList.add('delete-confirm');
+    }
   } else {
     slotEl.innerHTML = '';
   }
@@ -888,23 +903,56 @@ function isArrowItem(val) {
       const ward = slot.dataset.ward;
       const index = parseInt(slot.dataset.index, 10);
       
+      // If they clicked a DIFFERENT slot, reset the pending delete confirmation
+      if (pendingDeleteSlot.ward && (pendingDeleteSlot.ward !== ward || pendingDeleteSlot.docName !== docName || pendingDeleteSlot.index !== index)) {
+        if (pendingDeleteSlot.timerId) {
+          clearTimeout(pendingDeleteSlot.timerId);
+        }
+        pendingDeleteSlot = { ward: null, docName: null, index: null, timerId: null };
+        updateUI();
+      }
+
       const currentVal = state[ward][docName][index];
       console.log(`[Click Debug] Clicked slot: ${ward} | ${docName} | index ${index} | currentVal: ${currentVal}`);
       
       if (currentVal !== null && currentVal !== undefined) {
         if (typeof currentVal === 'string' && currentVal.endsWith('_progress')) {
-          console.log(`[Click Debug] Second click on progress item. Splicing index ${index}`);
-          const clearedVal = state[ward][docName][index];
-          
-          if (index === 0 && state[ward][docName][1] && isArrowItem(state[ward][docName][1])) {
-            const arrowVal = state[ward][docName][1];
-            state[ward][docName].splice(0, 2);
-            compactRowState(ward, docName);
-            handleQueueShift(ward, docName, 0, arrowVal);
+          if (pendingDeleteSlot.ward === ward &&
+              pendingDeleteSlot.docName === docName &&
+              pendingDeleteSlot.index === index) {
+            
+            console.log(`[Click Debug] Safety confirm click on progress item. Deleting index ${index}`);
+            if (pendingDeleteSlot.timerId) {
+              clearTimeout(pendingDeleteSlot.timerId);
+            }
+            pendingDeleteSlot = { ward: null, docName: null, index: null, timerId: null };
+
+            const clearedVal = state[ward][docName][index];
+            if (index === 0 && state[ward][docName][1] && isArrowItem(state[ward][docName][1])) {
+              const arrowVal = state[ward][docName][1];
+              state[ward][docName].splice(0, 2);
+              compactRowState(ward, docName);
+              handleQueueShift(ward, docName, 0, arrowVal);
+            } else {
+              state[ward][docName].splice(index, 1);
+              compactRowState(ward, docName);
+              handleQueueShift(ward, docName, index, clearedVal);
+            }
           } else {
-            state[ward][docName].splice(index, 1);
-            compactRowState(ward, docName);
-            handleQueueShift(ward, docName, index, clearedVal);
+            console.log(`[Click Debug] First click on progress item. Activating 3-second safety window.`);
+            if (pendingDeleteSlot.timerId) {
+              clearTimeout(pendingDeleteSlot.timerId);
+            }
+            pendingDeleteSlot = {
+              ward,
+              docName,
+              index,
+              timerId: setTimeout(() => {
+                console.log(`[Click Debug] Safety window expired. Resetting slot.`);
+                pendingDeleteSlot = { ward: null, docName: null, index: null, timerId: null };
+                updateUI();
+              }, 3000)
+            };
           }
         } else {
           console.log(`[Click Debug] First click on normal item. Transitioning to progress.`);
