@@ -462,12 +462,12 @@ function updateUI() {
     });
   }
 
-  // 1. Reorder Floor 1 rows based on off-duty status using CSS order
+  // 1. Reorder Floor 1 rows based on off-duty/retired status using dynamic gridRow styling
   let activeCount1 = 0;
   let offDutyCount1 = 0;
   for (let r = 1; r <= 4; r++) {
     const docName = renderDirectorsFloor1[r];
-    const isOff = offDutyDirectors[docName];
+    const isOff = offDutyDirectors[docName] || leaveTimes[docName] === '퇴근';
     let orderVal = 0;
     if (!isOff) {
       activeCount1++;
@@ -482,24 +482,35 @@ function updateUI() {
     const fContainer = document.querySelector(`.slots-container[data-ward="female"][data-director="${r}"]`);
     const mContainer = document.querySelector(`.slots-container[data-ward="male"][data-director="${r}"]`);
     
+    // grid-row style matches the calculated active/inactive order (+1 because header is row 1)
+    const gridRowVal = orderVal + 1;
+    
     if (cellF) {
       cellF.style.order = orderVal;
+      cellF.style.gridRow = `${gridRowVal}`;
       cellF.setAttribute('draggable', activeTab !== 'all' ? 'true' : 'false');
     }
     if (cellM) {
       cellM.style.order = orderVal;
+      cellM.style.gridRow = `${gridRowVal}`;
       cellM.setAttribute('draggable', activeTab !== 'all' ? 'true' : 'false');
     }
-    if (fContainer) fContainer.style.order = orderVal;
-    if (mContainer) mContainer.style.order = orderVal;
+    if (fContainer) {
+      fContainer.style.order = orderVal;
+      fContainer.style.gridRow = `${gridRowVal}`;
+    }
+    if (mContainer) {
+      mContainer.style.order = orderVal;
+      mContainer.style.gridRow = `${gridRowVal}`;
+    }
   }
 
-  // 2. Reorder Floor 2 rows based on off-duty status using CSS order
+  // 2. Reorder Floor 2 rows based on off-duty/retired status using dynamic gridRow styling
   let activeCount2 = 0;
   let offDutyCount2 = 0;
   for (let r = 1; r <= 4; r++) {
     const docName = renderDirectorsFloor2[r];
-    const isOff = offDutyDirectors[docName];
+    const isOff = offDutyDirectors[docName] || leaveTimes[docName] === '퇴근';
     let orderVal = 0;
     if (!isOff) {
       activeCount2++;
@@ -512,11 +523,17 @@ function updateUI() {
     const cell = document.querySelector(`#panel-floor2 .director-left-cell[data-row="${r}"]`);
     const sContainer = document.querySelector(`.slots-container[data-ward="secondFloor"][data-director="${r}"]`);
     
+    const gridRowVal = orderVal + 1;
+    
     if (cell) {
       cell.style.order = orderVal;
+      cell.style.gridRow = `${gridRowVal}`;
       cell.setAttribute('draggable', activeTab !== 'all' ? 'true' : 'false');
     }
-    if (sContainer) sContainer.style.order = orderVal;
+    if (sContainer) {
+      sContainer.style.order = orderVal;
+      sContainer.style.gridRow = `${gridRowVal}`;
+    }
   }
 
   // 3. Update 1st Floor tags and leave time buttons

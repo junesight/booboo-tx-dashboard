@@ -271,7 +271,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
 }
 
 @media (min-width: 1025px) {
-  /* 1층 3x5 Grid화 */
+  /* 1층 3x5 Grid Table화 */
   #panel-floor1 {
     display: grid !important;
     grid-template-columns: 100px 1fr 1fr !important;
@@ -284,65 +284,69 @@ body[data-active-tab="floor2"] #panel-floor2 {
     display: contents !important;
   }
 
-  /* 2층 2x5 Grid화 */
+  /* 2층 2x5 Grid Table화 */
   #panel-floor2 {
     display: grid !important;
     grid-template-columns: 100px 1fr !important;
     column-gap: 1.25rem !important;
     row-gap: 1.5rem !important;
     position: relative !important;
-    width: calc(50% + 50px - 1rem) !important;
-    max-width: calc(50% + 50px - 1rem) !important;
-    margin: 0 auto !important;
   }
   #panel-floor2 .ward-section,
   #panel-floor2 .board-grid {
     display: contents !important;
   }
 
-  /* 1층 3x5 그리드 자식 셀 매핑 */
-  #panel-floor1 .female-ward-section .left-header { grid-column: 1 !important; grid-row: 1 !important; }
-  #panel-floor1 .female-ward-section .director-left-cell[data-row="1"] { grid-column: 1 !important; grid-row: 2 !important; }
-  #panel-floor1 .female-ward-section .director-left-cell[data-row="2"] { grid-column: 1 !important; grid-row: 3 !important; }
-  #panel-floor1 .female-ward-section .director-left-cell[data-row="3"] { grid-column: 1 !important; grid-row: 4 !important; }
-  #panel-floor1 .female-ward-section .director-left-cell[data-row="4"] { grid-column: 1 !important; grid-row: 5 !important; }
+  /* 전체보기 뷰에서 2층 판넬의 정렬을 좌측(1층 여자 치료실 라인)으로 배치 */
+  body[data-active-tab="all"] #panel-floor2 {
+    width: calc(50% + 50px - 1rem) !important;
+    max-width: calc(50% + 50px - 1rem) !important;
+    margin: 0 !important; /* 좌측 정렬 */
+  }
+  /* 2층 단독 뷰에서만 화면 중앙에 배치 */
+  body[data-active-tab="floor2"] #panel-floor2 {
+    width: calc(50% + 50px - 1rem) !important;
+    max-width: calc(50% + 50px - 1rem) !important;
+    margin: 0 auto !important; /* 중앙 정렬 */
+  }
+
+  /* 속성 선택자를 사용한 1층 3x5 그리드 자식 셀 매핑 (contents 선택자 버그 완전 회피) */
+  #panel-floor1 .left-header { grid-column: 1 !important; grid-row: 1 !important; }
+  #panel-floor1 .director-left-cell[data-ward="female"][data-row="1"] { grid-column: 1 !important; grid-row: 2 !important; }
+  #panel-floor1 .director-left-cell[data-ward="female"][data-row="2"] { grid-column: 1 !important; grid-row: 3 !important; }
+  #panel-floor1 .director-left-cell[data-ward="female"][data-row="3"] { grid-column: 1 !important; grid-row: 4 !important; }
+  #panel-floor1 .director-left-cell[data-ward="female"][data-row="4"] { grid-column: 1 !important; grid-row: 5 !important; }
 
   #panel-floor1 .female-header { grid-column: 2 !important; grid-row: 1 !important; }
-  #panel-floor1 .female-ward-section .slots-container[data-director="1"] { grid-column: 2 !important; grid-row: 2 !important; }
-  #panel-floor1 .female-ward-section .slots-container[data-director="2"] { grid-column: 2 !important; grid-row: 3 !important; }
-  #panel-floor1 .female-ward-section .slots-container[data-director="3"] { grid-column: 2 !important; grid-row: 4 !important; }
-  #panel-floor1 .female-ward-section .slots-container[data-director="4"] { grid-column: 2 !important; grid-row: 5 !important; }
+  #panel-floor1 .slots-container[data-ward="female"][data-director="1"] { grid-column: 2 !important; grid-row: 2 !important; }
+  #panel-floor1 .slots-container[data-ward="female"][data-director="2"] { grid-column: 2 !important; grid-row: 3 !important; }
+  #panel-floor1 .slots-container[data-ward="female"][data-director="3"] { grid-column: 2 !important; grid-row: 4 !important; }
+  #panel-floor1 .slots-container[data-ward="female"][data-director="4"] { grid-column: 2 !important; grid-row: 5 !important; }
 
   #panel-floor1 .male-header { grid-column: 3 !important; grid-row: 1 !important; }
-  #panel-floor1 .male-ward-section .slots-container[data-director="1"] { grid-column: 3 !important; grid-row: 2 !important; }
-  #panel-floor1 .male-ward-section .slots-container[data-director="2"] { grid-column: 3 !important; grid-row: 3 !important; }
-  #panel-floor1 .male-ward-section .slots-container[data-director="3"] { grid-column: 3 !important; grid-row: 4 !important; }
-  #panel-floor1 .male-ward-section .slots-container[data-director="4"] { grid-column: 3 !important; grid-row: 5 !important; }
+  #panel-floor1 .slots-container[data-ward="male"][data-director="1"] { grid-column: 3 !important; grid-row: 2 !important; }
+  #panel-floor1 .slots-container[data-ward="male"][data-director="2"] { grid-column: 3 !important; grid-row: 3 !important; }
+  #panel-floor1 .slots-container[data-ward="male"][data-director="3"] { grid-column: 3 !important; grid-row: 4 !important; }
+  #panel-floor1 .slots-container[data-ward="male"][data-director="4"] { grid-column: 3 !important; grid-row: 5 !important; }
 
   /* 1층 남자 치료실의 의사 셀 및 구분선은 완전히 숨김 */
-  #panel-floor1 .male-ward-section .left-header,
-  #panel-floor1 .male-ward-section .director-left-cell,
-  #panel-floor1 .male-ward-section .vertical-divider {
+  #panel-floor1 .director-left-cell[data-ward="male"],
+  #panel-floor1 .vertical-divider[data-ward="male"] {
     display: none !important;
   }
 
   /* 2층 2x5 그리드 자식 셀 매핑 */
-  #panel-floor2 .second-floor-ward-section .left-header { grid-column: 1 !important; grid-row: 1 !important; }
-  #panel-floor2 .second-floor-ward-section .director-left-cell[data-row="1"] { grid-column: 1 !important; grid-row: 2 !important; }
-  #panel-floor2 .second-floor-ward-section .director-left-cell[data-row="2"] { grid-column: 1 !important; grid-row: 3 !important; }
-  #panel-floor2 .second-floor-ward-section .director-left-cell[data-row="3"] { grid-column: 1 !important; grid-row: 4 !important; }
-  #panel-floor2 .second-floor-ward-section .director-left-cell[data-row="4"] { grid-column: 1 !important; grid-row: 5 !important; }
+  #panel-floor2 .left-header { grid-column: 1 !important; grid-row: 1 !important; }
+  #panel-floor2 .director-left-cell[data-ward="secondFloor"][data-row="1"] { grid-column: 1 !important; grid-row: 2 !important; }
+  #panel-floor2 .director-left-cell[data-ward="secondFloor"][data-row="2"] { grid-column: 1 !important; grid-row: 3 !important; }
+  #panel-floor2 .director-left-cell[data-ward="secondFloor"][data-row="3"] { grid-column: 1 !important; grid-row: 4 !important; }
+  #panel-floor2 .director-left-cell[data-ward="secondFloor"][data-row="4"] { grid-column: 1 !important; grid-row: 5 !important; }
 
   #panel-floor2 .second-floor-header { grid-column: 2 !important; grid-row: 1 !important; }
-  #panel-floor2 .second-floor-ward-section .slots-container[data-director="1"] { grid-column: 2 !important; grid-row: 2 !important; }
-  #panel-floor2 .second-floor-ward-section .slots-container[data-director="2"] { grid-column: 2 !important; grid-row: 3 !important; }
-  #panel-floor2 .second-floor-ward-section .slots-container[data-director="3"] { grid-column: 2 !important; grid-row: 4 !important; }
-  #panel-floor2 .second-floor-ward-section .slots-container[data-director="4"] { grid-column: 2 !important; grid-row: 5 !important; }
-
-  /* 2층 구분선 숨김 */
-  #panel-floor2 .vertical-divider {
-    display: none !important;
-  }
+  #panel-floor2 .slots-container[data-ward="secondFloor"][data-director="1"] { grid-column: 2 !important; grid-row: 2 !important; }
+  #panel-floor2 .slots-container[data-ward="secondFloor"][data-director="2"] { grid-column: 2 !important; grid-row: 3 !important; }
+  #panel-floor2 .slots-container[data-ward="secondFloor"][data-director="3"] { grid-column: 2 !important; grid-row: 4 !important; }
+  #panel-floor2 .slots-container[data-ward="secondFloor"][data-director="4"] { grid-column: 2 !important; grid-row: 5 !important; }
 
   /* 각 셀 내부 박스들을 좌측 상단으로 동일 정렬 */
   .director-left-cell,
@@ -360,29 +364,19 @@ body[data-active-tab="floor2"] #panel-floor2 {
     gap: 0.25rem !important;
     padding: 0.25rem 0.4rem !important;
   }
-  .director-tag {
-    padding: 0.35rem 0.6rem !important;
-    font-size: 1.15rem !important;
-  }
-  .leave-time-btn {
-    padding: 0.15rem 0.4rem !important;
-    font-size: 0.72rem !important;
+
+  /* 💡 의사명 열 우측 끝 경계면에 정확히 2px 구분선 셋팅 (잘못 침투하던 before 선 대체) */
+  #panel-floor1 .left-header,
+  #panel-floor1 .director-left-cell[data-ward="female"],
+  #panel-floor2 .left-header,
+  #panel-floor2 .director-left-cell[data-ward="secondFloor"] {
+    border-right: 2px solid #cbd5e1 !important;
   }
 
-  /* 1층 절대 배치 구분선 가상 요소 적용 */
-  #panel-floor1::before {
-    content: "" !important;
-    position: absolute !important;
-    left: 116px !important;
-    top: 0 !important;
-    bottom: 0 !important;
-    width: 2px !important;
-    background-color: #cbd5e1 !important;
-    z-index: 2 !important;
-  }
+  /* 1층 정중앙 구분선 (여자-남자 구분선) 가상 요소 배치 */
   #panel-floor1::after {
     content: "" !important;
-    position: absolute;
+    position: absolute !important;
     left: calc(50% + 50px - 0.5rem) !important;
     top: 0 !important;
     bottom: 0 !important;
