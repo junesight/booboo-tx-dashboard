@@ -275,11 +275,11 @@ body[data-active-tab="floor2"] #panel-floor2 {
     grid-template-columns: 100px 4px 1fr !important;
     grid-auto-rows: 92px !important;
     column-gap: 1.25rem;
-    row-gap: 1.25rem;
+    row-gap: 1.5rem !important;
   }
   .board-grid > * {
-    padding-top: 1.2rem;
-    padding-bottom: 1.2rem;
+    padding-top: 0.15rem !important;
+    padding-bottom: 0.15rem !important;
   }
   .grid-header {
     padding-bottom: 1.5rem !important;
@@ -1590,12 +1590,12 @@ body[data-active-tab="floor2"] #panel-floor2 {
     margin-bottom: 1.2rem;
   }
   body[data-active-tab="all"] .board-grid {
-    row-gap: 0.6rem;
+    row-gap: 0.8rem !important;
     grid-auto-rows: 82px !important;
   }
   body[data-active-tab="all"] .board-grid > * {
-    padding-top: 0.6rem;
-    padding-bottom: 0.6rem;
+    padding-top: 0.1rem !important;
+    padding-bottom: 0.1rem !important;
   }
   body[data-active-tab="all"] .grid-header {
     padding-bottom: 0.8rem !important;
