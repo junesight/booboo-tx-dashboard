@@ -304,16 +304,34 @@ body[data-active-tab="floor2"] #panel-floor2 {
 .vertical-divider {
   display: none;
   background-color: #cbd5e1;
-  grid-column: 2;
-  grid-row: 1 / span 5;
   align-self: stretch;
   justify-self: center;
 }
 
+/* Explicit column positioning for grid elements in 3-column layouts (min-width: 769px) */
+@media (min-width: 769px) {
+  .left-header,
+  .director-left-cell {
+    grid-column: 1 !important;
+  }
+
+  .vertical-divider {
+    grid-column: 2 !important;
+    grid-row: 1 / span 5 !important;
+    display: block !important;
+  }
+
+  .female-header,
+  .male-header,
+  .second-floor-header,
+  .slots-container {
+    grid-column: 3 !important;
+  }
+}
+
 @media (min-width: 1025px) {
   .vertical-divider {
-    display: block;
-    width: 4px;
+    width: 4px !important;
   }
 }
 
