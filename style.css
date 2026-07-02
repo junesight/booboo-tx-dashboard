@@ -1432,10 +1432,10 @@ body[data-active-tab="floor2"] #panel-floor2 {
   width: fit-content;
 }
 
-@media (min-width: 1251px) {
+@media (min-width: 1025px) {
   .tabs-container {
     position: absolute;
-    left: calc(50% + 84px);
+    left: 50%;
     transform: translateX(-50%);
     z-index: 10;
   }
