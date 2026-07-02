@@ -895,21 +895,7 @@ function setupEventListeners() {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       
-      const panel1 = document.getElementById('panel-floor1');
-      const panel2 = document.getElementById('panel-floor2');
-      
-      if (tab === 'all') {
-        panel1.style.display = 'block';
-        panel2.style.display = 'block';
-      } else if (tab === 'floor1') {
-        panel1.style.display = 'block';
-        panel2.style.display = 'none';
-      } else if (tab === 'floor2') {
-        panel1.style.display = 'none';
-        panel2.style.display = 'block';
-      }
-      
-      // Update UI to apply correct doctor order and draggable settings for the active tab
+      // Let CSS handle showing/hiding panels based on body[data-active-tab] attribute
       updateUI();
     });
   });
