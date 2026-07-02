@@ -272,46 +272,86 @@ body[data-active-tab="floor2"] #panel-floor2 {
 
 @media (min-width: 1025px) {
   .board-grid {
-    grid-template-columns: 100px 4px 1fr !important;
+    position: relative !important;
+    grid-template-columns: 1fr !important;
     column-gap: 1.25rem;
     row-gap: 1.5rem !important;
+  }
+  .female-ward-section .board-grid,
+  .second-floor-ward-section .board-grid {
+    padding-left: 124px !important;
+  }
+  .male-ward-section .board-grid {
+    padding-left: 0 !important;
   }
   .grid-header {
     padding-bottom: 1.5rem !important;
   }
+
+  .female-ward-section .left-header,
+  .female-ward-section .director-left-cell,
+  .second-floor-ward-section .left-header,
+  .second-floor-ward-section .director-left-cell {
+    position: absolute !important;
+    left: 0 !important;
+    width: 100px !important;
+    height: 100% !important;
+    display: flex !important;
+    z-index: 5;
+  }
+  .female-ward-section .vertical-divider,
+  .second-floor-ward-section .vertical-divider {
+    position: absolute !important;
+    left: 112px !important;
+    width: 4px !important;
+    height: 100% !important;
+    display: block !important;
+    background-color: #cbd5e1;
+    z-index: 5;
+  }
+
   .male-ward-section .left-header,
   .male-ward-section .director-left-cell,
   .male-ward-section .vertical-divider {
-    visibility: hidden !important;
-    pointer-events: none !important;
+    display: none !important;
+  }
+
+  .slots-container,
+  .female-header,
+  .male-header,
+  .second-floor-header,
+  .left-header,
+  .director-left-cell,
+  .vertical-divider {
+    grid-column: 1 !important;
   }
 
   body[data-active-tab="all"] .female-ward-section,
   body[data-active-tab="floor1"] .female-ward-section {
-    flex: 0 0 50% !important;
-    width: 50% !important;
-    max-width: 50% !important;
+    flex: 0 0 calc(50% + 46px - 1rem) !important;
+    width: calc(50% + 46px - 1rem) !important;
+    max-width: calc(50% + 46px - 1rem) !important;
     border-right: 4px solid #cbd5e1;
     padding-right: 2rem;
   }
   body[data-active-tab="all"] .male-ward-section,
   body[data-active-tab="floor1"] .male-ward-section {
-    flex: 0 0 calc(50% + 112px) !important;
-    width: calc(50% + 112px) !important;
-    max-width: calc(50% + 112px) !important;
-    margin-left: -144px !important;
+    flex: 0 0 calc(50% - 78px - 1rem) !important;
+    width: calc(50% - 78px - 1rem) !important;
+    max-width: calc(50% - 78px - 1rem) !important;
     border-left: none !important;
     padding-left: 0 !important;
+    margin-left: 0 !important;
   }
   body[data-active-tab="all"] .second-floor-ward-section {
-    flex: 0 0 50% !important;
-    width: 50% !important;
-    max-width: 50% !important;
+    flex: 0 0 calc(50% + 46px - 1rem) !important;
+    width: calc(50% + 46px - 1rem) !important;
+    max-width: calc(50% + 46px - 1rem) !important;
   }
   body[data-active-tab="floor2"] .second-floor-ward-section {
-    flex: 0 0 50% !important;
-    width: 50% !important;
-    max-width: 50% !important;
+    flex: 0 0 calc(50% + 46px - 1rem) !important;
+    width: calc(50% + 46px - 1rem) !important;
+    max-width: calc(50% + 46px - 1rem) !important;
     margin: 0 auto !important;
   }
 }
