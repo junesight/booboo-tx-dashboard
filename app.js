@@ -265,6 +265,8 @@ async function initApp() {
     compactRowState('secondFloor', d);
   });
 
+  sanitizeState(true);
+
   setupEventListeners();
   setupSupabaseRealtime();
   updateUI();
@@ -308,6 +310,7 @@ function setupSupabaseRealtime() {
           if (newData.rowDirectorsFloor1) Object.assign(rowDirectorsFloor1, newData.rowDirectorsFloor1);
           if (newData.rowDirectorsFloor2) Object.assign(rowDirectorsFloor2, newData.rowDirectorsFloor2);
           
+          sanitizeState(false);
           updateUI();
         }
       }
@@ -352,6 +355,35 @@ function compactRowState(ward, docName) {
   if (!state[ward] || !state[ward][docName]) return;
   const occupied = state[ward][docName].filter(v => v !== null && v !== undefined && v !== '');
   state[ward][docName] = [...occupied, ...Array(8 - occupied.length).fill(null)];
+}
+
+// Sanitize state by removing _progress suffix from slots at index >= 1
+function sanitizeState(shouldSave = true) {
+  const wards = ['female', 'male', 'secondFloor'];
+  let modified = false;
+  
+  wards.forEach(w => {
+    if (state[w]) {
+      Object.keys(state[w]).forEach(d => {
+        if (Array.isArray(state[w][d])) {
+          state[w][d] = state[w][d].map((val, idx) => {
+            if (idx >= 1 && typeof val === 'string' && val.endsWith('_progress')) {
+              modified = true;
+              const clean = val.substring(0, val.length - 9);
+              const parsed = parseInt(clean, 10);
+              return (!isNaN(parsed) && String(parsed) === clean) ? parsed : clean;
+            }
+            return val;
+          });
+        }
+      });
+    }
+  });
+  
+  if (modified && shouldSave) {
+    console.log('[Sanitize] Cleaned up phantom _progress suffixes from index >= 1 slots.');
+    saveState();
+  }
 }
 
 // Helper to apply doctor-specific CSS classes
