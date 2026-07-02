@@ -84,13 +84,8 @@ let dragSource = {
   index: null
 };
 
-// Track the last clicked progress slot for double-click confirmation
-let lastClickedProgressSlot = {
-  ward: null,
-  docName: null,
-  index: null,
-  timestamp: 0
-};
+// Track active revert timeouts for waiting slots (index >= 1)
+let waitingRevertTimeouts = {};
 
 // Track drag type ('magnet' | 'row') and drag source row index/floor
 let dragType = null; // 'magnet' | 'row'
@@ -300,6 +295,10 @@ function setupSupabaseRealtime() {
       (payload) => {
         const newData = payload.new.data;
         if (newData) {
+          // Clear active timeouts since the state is being updated remotely
+          Object.values(waitingRevertTimeouts).forEach(clearTimeout);
+          waitingRevertTimeouts = {};
+
           if (newData.state) Object.assign(state, newData.state);
           if (newData.leaveTimes) Object.assign(leaveTimes, newData.leaveTimes);
           if (newData.offDutyDirectors) Object.assign(offDutyDirectors, newData.offDutyDirectors);
@@ -901,19 +900,14 @@ function isArrowItem(val) {
       console.log(`[Click Debug] Clicked slot: ${ward} | ${docName} | index ${index} | currentVal: ${currentVal}`);
       
       if (currentVal !== null && currentVal !== undefined) {
-        if (typeof currentVal === 'string' && currentVal.endsWith('_progress')) {
-          const now = Date.now();
-          if (lastClickedProgressSlot.ward === ward &&
-              lastClickedProgressSlot.docName === docName &&
-              lastClickedProgressSlot.index === index &&
-              (now - lastClickedProgressSlot.timestamp) <= 3000) {
-            
-            console.log(`[Click Debug] Double click confirmed within 3s. Deleting index ${index}`);
-            // Reset
-            lastClickedProgressSlot = { ward: null, docName: null, index: null, timestamp: 0 };
-
+        const isProgress = typeof currentVal === 'string' && currentVal.endsWith('_progress');
+        
+        if (index === 0) {
+          // INDEX 0: Original immediate behavior (no confirmation needed)
+          if (isProgress) {
+            console.log(`[Click Debug] Click on progress item at index 0. Immediate delete.`);
             const clearedVal = state[ward][docName][index];
-            if (index === 0 && state[ward][docName][1] && isArrowItem(state[ward][docName][1])) {
+            if (state[ward][docName][1] && isArrowItem(state[ward][docName][1])) {
               const arrowVal = state[ward][docName][1];
               state[ward][docName].splice(0, 2);
               compactRowState(ward, docName);
@@ -923,23 +917,45 @@ function isArrowItem(val) {
               compactRowState(ward, docName);
               handleQueueShift(ward, docName, index, clearedVal);
             }
+          } else {
+            console.log(`[Click Debug] Click on normal item at index 0. Transitioning to progress.`);
+            state[ward][docName][index] = String(currentVal) + '_progress';
+            clearOtherWardsProgress(docName, ward);
+          }
+          saveState();
+          updateUI();
+        } else {
+          // INDEX >= 1: Requires double-click within 3 seconds to delete
+          const key = `${ward}_${docName}_${index}`;
+          if (isProgress) {
+            console.log(`[Click Debug] Second click on waiting item at index ${index} within 3s. Deleting.`);
+            if (waitingRevertTimeouts[key]) {
+              clearTimeout(waitingRevertTimeouts[key]);
+              delete waitingRevertTimeouts[key];
+            }
+            state[ward][docName].splice(index, 1);
+            compactRowState(ward, docName);
             saveState();
             updateUI();
           } else {
-            console.log(`[Click Debug] First click on progress item. Recording timestamp.`);
-            lastClickedProgressSlot = {
-              ward,
-              docName,
-              index,
-              timestamp: now
-            };
+            console.log(`[Click Debug] First click on waiting item at index ${index}. Activating 3s delete window.`);
+            state[ward][docName][index] = String(currentVal) + '_progress';
+            saveState();
+            updateUI();
+            
+            waitingRevertTimeouts[key] = setTimeout(() => {
+              console.log(`[Click Debug] Reverting waiting item at index ${index} back to normal.`);
+              const val = state[ward][docName][index];
+              if (val && typeof val === 'string' && val.endsWith('_progress')) {
+                const cleanVal = val.substring(0, val.length - 9);
+                const parsed = parseInt(cleanVal, 10);
+                state[ward][docName][index] = (!isNaN(parsed) && String(parsed) === cleanVal) ? parsed : cleanVal;
+                saveState();
+                updateUI();
+              }
+              delete waitingRevertTimeouts[key];
+            }, 3000);
           }
-        } else {
-          console.log(`[Click Debug] First click on normal item. Transitioning to progress.`);
-          state[ward][docName][index] = String(currentVal) + '_progress';
-          clearOtherWardsProgress(docName, ward);
-          saveState();
-          updateUI();
         }
         console.log(`[Click Debug] State after click:`, JSON.stringify(state[ward][docName]));
       } else {
@@ -972,6 +988,10 @@ function isArrowItem(val) {
   boardWrapper.addEventListener('dragstart', (e) => {
     clearTimeout(longPressTimer);
     isLongPress = false;
+    
+    // Clear active timeouts when drag starts to prevent phantom reverts
+    Object.values(waitingRevertTimeouts).forEach(clearTimeout);
+    waitingRevertTimeouts = {};
     
     const magnet = e.target.closest('.slot-magnet');
     const cell = e.target.closest('.director-left-cell');
