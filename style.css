@@ -302,6 +302,10 @@ body[data-active-tab="floor2"] #panel-floor2 {
   .male-ward-section .board-grid {
     grid-template-columns: 1fr !important;
   }
+  .male-ward-section .slots-container,
+  .male-ward-section .male-header {
+    grid-column: 1 !important;
+  }
 
   body[data-active-tab="all"] .female-ward-section,
   body[data-active-tab="floor1"] .female-ward-section {
