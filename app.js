@@ -3,6 +3,36 @@ const supabaseUrl = 'https://wfyuxxskwlczoyisdcmy.supabase.co';
 const supabaseKey = 'sb_publishable_yUeE6ynEpbR3Eq-k3Gv1Ew_1DiaJHjz';
 const supabaseClient = window.supabase ? window.supabase.createClient(supabaseUrl, supabaseKey) : null;
 
+// Connection Status Indicator Updater
+function updateConnectionStatus(status) {
+  const indicator = document.getElementById('connection-status');
+  if (!indicator) return;
+
+  indicator.classList.remove('disconnected', 'connecting');
+  
+  if (status === 'SUBSCRIBED') {
+    indicator.textContent = '● 실시간 연결됨';
+  } else if (status === 'connecting') {
+    indicator.classList.add('connecting');
+    indicator.textContent = '● 실시간 연결 중...';
+  } else if (status === 'local') {
+    indicator.classList.add('connecting');
+    indicator.textContent = '● 로컬 저장 모드';
+  } else {
+    indicator.classList.add('disconnected');
+    indicator.textContent = '● 실시간 연결 끊김';
+  }
+}
+
+// Initial status setting on load
+document.addEventListener('DOMContentLoaded', () => {
+  if (!supabaseClient) {
+    updateConnectionStatus('local');
+  } else {
+    updateConnectionStatus('connecting');
+  }
+});
+
 // Real-time Treatment Sequence Tracker State
 const state = {
   female: {
@@ -282,9 +312,14 @@ async function initApp() {
 
 // Setup Supabase Realtime channel subscription to receive live updates
 function setupSupabaseRealtime() {
-  if (!supabaseClient) return;
+  if (!supabaseClient) {
+    updateConnectionStatus('local');
+    return;
+  }
 
-  supabaseClient
+  updateConnectionStatus('connecting');
+
+  const channel = supabaseClient
     .channel('public:clinic_state')
     .on(
       'postgres_changes',
@@ -297,7 +332,6 @@ function setupSupabaseRealtime() {
       (payload) => {
         const newData = payload.new.data;
         if (newData) {
-
           if (newData.state) Object.assign(state, newData.state);
           if (newData.leaveTimes) Object.assign(leaveTimes, newData.leaveTimes);
           if (newData.offDutyDirectors) Object.assign(offDutyDirectors, newData.offDutyDirectors);
@@ -308,8 +342,24 @@ function setupSupabaseRealtime() {
           updateUI();
         }
       }
-    )
-    .subscribe();
+    );
+
+  channel.subscribe((status, err) => {
+    console.log("Supabase Realtime subscribe status:", status);
+    if (status === 'SUBSCRIBED') {
+      updateConnectionStatus('SUBSCRIBED');
+    } else if (status === 'TIMED_OUT' || status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+      updateConnectionStatus('disconnected');
+    }
+  });
+
+  // Handle online/offline events for dynamic reconnect status updates
+  window.addEventListener('online', () => {
+    updateConnectionStatus('connecting');
+  });
+  window.addEventListener('offline', () => {
+    updateConnectionStatus('disconnected');
+  });
 }
 
 // Save current state to localStorage and Supabase

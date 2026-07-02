@@ -145,6 +145,14 @@ body {
   animation: pulse 2s infinite;
 }
 
+.status-indicator-active.disconnected {
+  color: #ef4444 !important;
+}
+
+.status-indicator-active.connecting {
+  color: #f59e0b !important;
+}
+
 @keyframes pulse {
   0% { opacity: 0.7; }
   50% { opacity: 1; }
