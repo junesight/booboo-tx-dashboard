@@ -1590,12 +1590,12 @@ body[data-active-tab="floor2"] #panel-floor2 {
     margin-bottom: 1.2rem;
   }
   body[data-active-tab="all"] .board-grid {
-    row-gap: 0.8rem !important;
+    row-gap: 0.6rem;
     grid-auto-rows: 82px !important;
   }
   body[data-active-tab="all"] .board-grid > * {
-    padding-top: 0.1rem !important;
-    padding-bottom: 0.1rem !important;
+    padding-top: 0.6rem;
+    padding-bottom: 0.6rem;
   }
   body[data-active-tab="all"] .grid-header {
     padding-bottom: 0.8rem !important;
