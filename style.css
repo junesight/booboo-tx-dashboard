@@ -279,39 +279,39 @@ body[data-active-tab="floor2"] #panel-floor2 {
   .grid-header {
     padding-bottom: 1.5rem !important;
   }
-  .male-ward-section {
-    border-left: 4px solid #cbd5e1;
-  }
   .male-ward-section .left-header,
   .male-ward-section .director-left-cell,
   .male-ward-section .vertical-divider {
-    display: none !important;
-  }
-  .male-ward-section .board-grid {
-    grid-template-columns: 1fr !important;
-  }
-  .male-ward-section .slots-container,
-  .male-ward-section .male-header {
-    grid-column: 1 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
   }
 
   body[data-active-tab="all"] .female-ward-section,
-  body[data-active-tab="floor1"] .female-ward-section,
-  body[data-active-tab="all"] .second-floor-ward-section {
-    flex: 0 0 calc(50% + 38px - 1rem) !important;
-    width: calc(50% + 38px - 1rem) !important;
-    max-width: calc(50% + 38px - 1rem) !important;
+  body[data-active-tab="floor1"] .female-ward-section {
+    flex: 0 0 50% !important;
+    width: 50% !important;
+    max-width: 50% !important;
+    border-right: 4px solid #cbd5e1;
+    padding-right: 2rem;
   }
   body[data-active-tab="all"] .male-ward-section,
   body[data-active-tab="floor1"] .male-ward-section {
-    flex: 0 0 calc(50% - 38px - 1rem) !important;
-    width: calc(50% - 38px - 1rem) !important;
-    max-width: calc(50% - 38px - 1rem) !important;
+    flex: 0 0 calc(50% + 112px) !important;
+    width: calc(50% + 112px) !important;
+    max-width: calc(50% + 112px) !important;
+    margin-left: -144px !important;
+    border-left: none !important;
+    padding-left: 0 !important;
+  }
+  body[data-active-tab="all"] .second-floor-ward-section {
+    flex: 0 0 50% !important;
+    width: 50% !important;
+    max-width: 50% !important;
   }
   body[data-active-tab="floor2"] .second-floor-ward-section {
-    flex: 0 0 calc(50% + 38px - 1rem) !important;
-    width: calc(50% + 38px - 1rem) !important;
-    max-width: calc(50% + 38px - 1rem) !important;
+    flex: 0 0 50% !important;
+    width: 50% !important;
+    max-width: 50% !important;
     margin: 0 auto !important;
   }
 }
