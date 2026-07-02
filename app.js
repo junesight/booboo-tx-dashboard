@@ -445,95 +445,38 @@ function updateUI() {
   const activeTab = document.body.getAttribute('data-active-tab') || 'all';
   const priorityOrder = ['최보빈', '김준현', '김영윤', '박지현', '안태윤', '황두호'];
   
-  let renderDirectorsFloor1 = { ...rowDirectorsFloor1 };
-  let renderDirectorsFloor2 = { ...rowDirectorsFloor2 };
-  
-  if (activeTab === 'all') {
-    const sorted1 = Object.values(rowDirectorsFloor1).filter(Boolean).sort((a, b) => priorityOrder.indexOf(a) - priorityOrder.indexOf(b));
-    renderDirectorsFloor1 = {};
-    sorted1.forEach((name, idx) => {
-      renderDirectorsFloor1[idx + 1] = name;
-    });
-    
-    const sorted2 = Object.values(rowDirectorsFloor2).filter(Boolean).sort((a, b) => priorityOrder.indexOf(a) - priorityOrder.indexOf(b));
-    renderDirectorsFloor2 = {};
-    sorted2.forEach((name, idx) => {
-      renderDirectorsFloor2[idx + 1] = name;
-    });
-  }
+  // 💡 정렬 기준: 오늘 휴진(offDuty)이거나 퇴근(leaveTime === '퇴근')인 원장을 맨 뒤(아래)로 밀기
+  const sortDirectors = (a, b) => {
+    const isOffA = offDutyDirectors[a] || leaveTimes[a] === '퇴근';
+    const isOffB = offDutyDirectors[b] || leaveTimes[b] === '퇴근';
+    if (isOffA && !isOffB) return 1;
+    if (!isOffA && isOffB) return -1;
+    return priorityOrder.indexOf(a) - priorityOrder.indexOf(b);
+  };
 
-  // 1. Reorder Floor 1 rows based on off-duty/retired status using dynamic gridRow styling
-  let activeCount1 = 0;
-  let offDutyCount1 = 0;
+  // 1층 원장 리스트 정렬 후 데이터 배정
+  const sorted1 = Object.values(rowDirectorsFloor1).filter(Boolean).sort(sortDirectors);
+  let renderDirectorsFloor1 = {};
+  sorted1.forEach((name, idx) => {
+    renderDirectorsFloor1[idx + 1] = name;
+  });
+  
+  // 2층 원장 리스트 정렬 후 데이터 배정
+  const sorted2 = Object.values(rowDirectorsFloor2).filter(Boolean).sort(sortDirectors);
+  let renderDirectorsFloor2 = {};
+  sorted2.forEach((name, idx) => {
+    renderDirectorsFloor2[idx + 1] = name;
+  });
+
+  // 드래그 앤 드롭 드래그 가능 속성 활성화 제어만 깔끔하게 세팅
   for (let r = 1; r <= 4; r++) {
-    const docName = renderDirectorsFloor1[r];
-    const isOff = offDutyDirectors[docName] || leaveTimes[docName] === '퇴근';
-    let orderVal = 0;
-    if (!isOff) {
-      activeCount1++;
-      orderVal = activeCount1;
-    } else {
-      offDutyCount1++;
-      orderVal = 10 + offDutyCount1;
-    }
-    
     const cellF = document.querySelector(`#panel-floor1 .director-left-cell[data-row="${r}"][data-ward="female"]`);
     const cellM = document.querySelector(`#panel-floor1 .director-left-cell[data-row="${r}"][data-ward="male"]`);
-    const fContainer = document.querySelector(`.slots-container[data-ward="female"][data-director="${r}"]`);
-    const mContainer = document.querySelector(`.slots-container[data-ward="male"][data-director="${r}"]`);
+    const cell2 = document.querySelector(`#panel-floor2 .director-left-cell[data-row="${r}"]`);
     
-    // grid-row style matches the calculated active/inactive order (+1 because header is row 1)
-    const gridRowVal = orderVal + 1;
-    
-    if (cellF) {
-      cellF.style.order = orderVal;
-      cellF.style.gridRow = `${gridRowVal}`;
-      cellF.setAttribute('draggable', activeTab !== 'all' ? 'true' : 'false');
-    }
-    if (cellM) {
-      cellM.style.order = orderVal;
-      cellM.style.gridRow = `${gridRowVal}`;
-      cellM.setAttribute('draggable', activeTab !== 'all' ? 'true' : 'false');
-    }
-    if (fContainer) {
-      fContainer.style.order = orderVal;
-      fContainer.style.gridRow = `${gridRowVal}`;
-    }
-    if (mContainer) {
-      mContainer.style.order = orderVal;
-      mContainer.style.gridRow = `${gridRowVal}`;
-    }
-  }
-
-  // 2. Reorder Floor 2 rows based on off-duty/retired status using dynamic gridRow styling
-  let activeCount2 = 0;
-  let offDutyCount2 = 0;
-  for (let r = 1; r <= 4; r++) {
-    const docName = renderDirectorsFloor2[r];
-    const isOff = offDutyDirectors[docName] || leaveTimes[docName] === '퇴근';
-    let orderVal = 0;
-    if (!isOff) {
-      activeCount2++;
-      orderVal = activeCount2;
-    } else {
-      offDutyCount2++;
-      orderVal = 10 + offDutyCount2;
-    }
-    
-    const cell = document.querySelector(`#panel-floor2 .director-left-cell[data-row="${r}"]`);
-    const sContainer = document.querySelector(`.slots-container[data-ward="secondFloor"][data-director="${r}"]`);
-    
-    const gridRowVal = orderVal + 1;
-    
-    if (cell) {
-      cell.style.order = orderVal;
-      cell.style.gridRow = `${gridRowVal}`;
-      cell.setAttribute('draggable', activeTab !== 'all' ? 'true' : 'false');
-    }
-    if (sContainer) {
-      sContainer.style.order = orderVal;
-      sContainer.style.gridRow = `${gridRowVal}`;
-    }
+    if (cellF) cellF.setAttribute('draggable', activeTab !== 'all' ? 'true' : 'false');
+    if (cellM) cellM.setAttribute('draggable', activeTab !== 'all' ? 'true' : 'false');
+    if (cell2) cell2.setAttribute('draggable', activeTab !== 'all' ? 'true' : 'false');
   }
 
   // 3. Update 1st Floor tags and leave time buttons

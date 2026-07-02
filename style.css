@@ -271,27 +271,30 @@ body[data-active-tab="floor2"] #panel-floor2 {
 }
 
 @media (min-width: 1025px) {
-  /* 1층 3x5 Grid Table화 */
-  #panel-floor1 {
+  /* PC 뷰포트 탭 스위칭 활성화 규칙 지정 (타 판넬이 껴서 나오던 4, 5번 버그 방지) */
+  #panel-floor1,
+  #panel-floor2 {
+    display: none !important;
+  }
+  body[data-active-tab="all"] #panel-floor1,
+  body[data-active-tab="floor1"] #panel-floor1 {
     display: grid !important;
     grid-template-columns: 100px 1fr 1fr !important;
     column-gap: 2rem !important;
     row-gap: 1.5rem !important;
     position: relative !important;
   }
-  #panel-floor1 .ward-section,
-  #panel-floor1 .board-grid {
-    display: contents !important;
-  }
-
-  /* 2층 2x5 Grid Table화 */
-  #panel-floor2 {
+  body[data-active-tab="all"] #panel-floor2,
+  body[data-active-tab="floor2"] #panel-floor2 {
     display: grid !important;
     grid-template-columns: 100px 1fr !important;
     column-gap: 1.25rem !important;
     row-gap: 1.5rem !important;
     position: relative !important;
   }
+
+  #panel-floor1 .ward-section,
+  #panel-floor1 .board-grid,
   #panel-floor2 .ward-section,
   #panel-floor2 .board-grid {
     display: contents !important;
@@ -329,9 +332,14 @@ body[data-active-tab="floor2"] #panel-floor2 {
   #panel-floor1 .slots-container[data-ward="male"][data-director="3"] { grid-column: 3 !important; grid-row: 4 !important; }
   #panel-floor1 .slots-container[data-ward="male"][data-director="4"] { grid-column: 3 !important; grid-row: 5 !important; }
 
-  /* 1층 남자 치료실의 의사 셀 및 구분선은 완전히 숨김 */
-  #panel-floor1 .director-left-cell[data-ward="male"],
-  #panel-floor1 .vertical-divider[data-ward="male"] {
+  /* 1층 및 2층 내부의 하드코딩된 구분선들은 완전히 숨김 (여자치료실 내부 얇은 구분선 완전 방지) */
+  #panel-floor1 .vertical-divider,
+  #panel-floor2 .vertical-divider {
+    display: none !important;
+  }
+
+  /* 1층 남자 치료실의 의사 셀은 완전히 숨김 */
+  #panel-floor1 .director-left-cell[data-ward="male"] {
     display: none !important;
   }
 
@@ -365,7 +373,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
     padding: 0.25rem 0.4rem !important;
   }
 
-  /* 💡 의사명 열 우측 끝 경계면에 정확히 2px 구분선 셋팅 (잘못 침투하던 before 선 대체) */
+  /* 💡 의사명 열 우측 끝 경계면에 정확히 2px 구분선 셋팅 */
   #panel-floor1 .left-header,
   #panel-floor1 .director-left-cell[data-ward="female"],
   #panel-floor2 .left-header,
@@ -373,16 +381,10 @@ body[data-active-tab="floor2"] #panel-floor2 {
     border-right: 2px solid #cbd5e1 !important;
   }
 
-  /* 1층 정중앙 구분선 (여자-남자 구분선) 가상 요소 배치 */
-  #panel-floor1::after {
-    content: "" !important;
-    position: absolute !important;
-    left: calc(50% + 50px - 0.5rem) !important;
-    top: 0 !important;
-    bottom: 0 !important;
-    width: 4px !important;
-    background-color: #cbd5e1 !important;
-    z-index: 2 !important;
+  /* 💡 여자-남자 치료실 사이 정중앙에 정확히 4px 구분선 셋팅 (absolute 꼼수 제거) */
+  #panel-floor1 .female-header,
+  #panel-floor1 .slots-container[data-ward="female"] {
+    border-right: 4px solid #cbd5e1 !important;
   }
 }
 
