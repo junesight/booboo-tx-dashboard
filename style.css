@@ -294,9 +294,26 @@ body[data-active-tab="floor2"] #panel-floor2 {
   .male-ward-section {
     border-left: 4px solid #cbd5e1;
   }
+  .male-ward-section .left-header,
+  .male-ward-section .director-left-cell,
   .male-ward-section .vertical-divider {
-    visibility: hidden !important;
-    pointer-events: none !important;
+    display: none !important;
+  }
+  .male-ward-section .board-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  body[data-active-tab="all"] .female-ward-section,
+  body[data-active-tab="floor1"] .female-ward-section {
+    flex: 0 0 calc(50% + 38px - 1rem) !important;
+    width: calc(50% + 38px - 1rem) !important;
+    max-width: calc(50% + 38px - 1rem) !important;
+  }
+  body[data-active-tab="all"] .male-ward-section,
+  body[data-active-tab="floor1"] .male-ward-section {
+    flex: 0 0 calc(50% - 38px - 1rem) !important;
+    width: calc(50% - 38px - 1rem) !important;
+    max-width: calc(50% - 38px - 1rem) !important;
   }
 }
 
