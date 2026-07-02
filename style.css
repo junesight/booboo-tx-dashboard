@@ -1085,7 +1085,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
   color: #ffffff;
   font-size: 1.75rem !important;
   font-weight: 700;
-  line-height: 1.3 !important;
+  line-height: 1.1 !important;
   text-shadow: none;
   display: flex;
   flex-direction: column;
@@ -1097,7 +1097,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
   font-size: 0.68rem;
   font-weight: 700;
   display: block;
-  margin-top: 8px;
+  margin-top: 3px;
 }
 
 /* Text Magnet custom sizes (for '린다', '상담', '초음파', '추나') - Expanded to fill slot */

@@ -76,6 +76,10 @@ const rowDirectorsFloor2 = {
   4: '박지현'
 };
 
+// Rendered Director Names per Row (synced with UI order)
+let renderDirectorsFloor1 = {};
+let renderDirectorsFloor2 = {};
+
 // Track currently active slot for edit
 let activeSlot = {
   ward: null,      // 'female' | 'male' | 'secondFloor'
@@ -443,27 +447,39 @@ function applyDoctorClass(element, cell, docName) {
 // Update the full interface based on state
 function updateUI() {
   const activeTab = document.body.getAttribute('data-active-tab') || 'all';
-  const priorityOrder = ['최보빈', '김준현', '김영윤', '박지현', '안태윤', '황두호'];
   
-  // 💡 정렬 기준: 오늘 휴진(offDuty)이거나 퇴근(leaveTime === '퇴근')인 원장을 맨 뒤(아래)로 밀기
-  const sortDirectors = (a, b) => {
+  // 💡 1층 정렬 기준: 오늘 휴진(offDuty)이거나 퇴근(leaveTime === '퇴근')인 원장을 맨 뒤(아래)로 밀되, 나머지는 현재 rowDirectorsFloor1 순서 유지
+  const sortDirectors1 = (a, b) => {
     const isOffA = offDutyDirectors[a] || leaveTimes[a] === '퇴근';
     const isOffB = offDutyDirectors[b] || leaveTimes[b] === '퇴근';
     if (isOffA && !isOffB) return 1;
     if (!isOffA && isOffB) return -1;
-    return priorityOrder.indexOf(a) - priorityOrder.indexOf(b);
+    const idxA = parseInt(Object.keys(rowDirectorsFloor1).find(k => rowDirectorsFloor1[k] === a) || 99, 10);
+    const idxB = parseInt(Object.keys(rowDirectorsFloor1).find(k => rowDirectorsFloor1[k] === b) || 99, 10);
+    return idxA - idxB;
+  };
+
+  // 💡 2층 정렬 기준: 동일하게 휴진/퇴근 원장을 아래로 밀되, 나머지는 현재 rowDirectorsFloor2 순서 유지
+  const sortDirectors2 = (a, b) => {
+    const isOffA = offDutyDirectors[a] || leaveTimes[a] === '퇴근';
+    const isOffB = offDutyDirectors[b] || leaveTimes[b] === '퇴근';
+    if (isOffA && !isOffB) return 1;
+    if (!isOffA && isOffB) return -1;
+    const idxA = parseInt(Object.keys(rowDirectorsFloor2).find(k => rowDirectorsFloor2[k] === a) || 99, 10);
+    const idxB = parseInt(Object.keys(rowDirectorsFloor2).find(k => rowDirectorsFloor2[k] === b) || 99, 10);
+    return idxA - idxB;
   };
 
   // 1층 원장 리스트 정렬 후 데이터 배정
-  const sorted1 = Object.values(rowDirectorsFloor1).filter(Boolean).sort(sortDirectors);
-  let renderDirectorsFloor1 = {};
+  const sorted1 = Object.values(rowDirectorsFloor1).filter(Boolean).sort(sortDirectors1);
+  renderDirectorsFloor1 = {};
   sorted1.forEach((name, idx) => {
     renderDirectorsFloor1[idx + 1] = name;
   });
   
   // 2층 원장 리스트 정렬 후 데이터 배정
-  const sorted2 = Object.values(rowDirectorsFloor2).filter(Boolean).sort(sortDirectors);
-  let renderDirectorsFloor2 = {};
+  const sorted2 = Object.values(rowDirectorsFloor2).filter(Boolean).sort(sortDirectors2);
+  renderDirectorsFloor2 = {};
   sorted2.forEach((name, idx) => {
     renderDirectorsFloor2[idx + 1] = name;
   });
@@ -1827,12 +1843,20 @@ async function syncScheduleFromSupabase({ silent = false } = {}) {
 // Swap row designations between two rows on a specific floor
 function swapRows(floor, rowA, rowB) {
   const directors = floor === 1 ? rowDirectorsFloor1 : rowDirectorsFloor2;
+  const renderDirectors = floor === 1 ? renderDirectorsFloor1 : renderDirectorsFloor2;
   
-  const temp = directors[rowA];
-  directors[rowA] = directors[rowB];
-  directors[rowB] = temp;
+  const nameA = renderDirectors[rowA];
+  const nameB = renderDirectors[rowB];
   
-  saveState();
+  const keyA = Object.keys(directors).find(k => directors[k] === nameA);
+  const keyB = Object.keys(directors).find(k => directors[k] === nameB);
   
-  updateUI();
+  if (keyA && keyB) {
+    const temp = directors[keyA];
+    directors[keyA] = directors[keyB];
+    directors[keyB] = temp;
+    
+    saveState();
+    updateUI();
+  }
 }
