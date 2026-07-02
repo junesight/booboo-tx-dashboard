@@ -300,6 +300,19 @@ body[data-active-tab="floor2"] #panel-floor2 {
   .male-ward-section {
     border-left: 4px solid #cbd5e1;
   }
+
+  body[data-active-tab="all"] .female-ward-section,
+  body[data-active-tab="floor1"] .female-ward-section {
+    flex: 0 0 calc(50% + 42px - 1rem) !important;
+    width: calc(50% + 42px - 1rem) !important;
+    max-width: calc(50% + 42px - 1rem) !important;
+  }
+  body[data-active-tab="all"] .male-ward-section,
+  body[data-active-tab="floor1"] .male-ward-section {
+    flex: 0 0 calc(50% - 42px - 1rem) !important;
+    width: calc(50% - 42px - 1rem) !important;
+    max-width: calc(50% - 42px - 1rem) !important;
+  }
 }
 
 /* Grid Headers */
