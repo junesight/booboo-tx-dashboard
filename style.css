@@ -288,7 +288,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
   body[data-active-tab="floor2"] #panel-floor2 {
     display: grid !important;
     grid-template-columns: 100px 1fr !important;
-    column-gap: 1.25rem !important;
+    column-gap: 2rem !important;
     row-gap: 1.5rem !important;
     position: relative !important;
   }
@@ -373,20 +373,41 @@ body[data-active-tab="floor2"] #panel-floor2 {
     padding: 0.25rem 0.4rem !important;
   }
 
-  /* 💡 의사명 열 우측 끝 경계면에 정확히 2px 구분선 셋팅 */
-  #panel-floor1 .left-header,
-  #panel-floor1 .director-left-cell[data-ward="female"],
-  #panel-floor2 .left-header,
-  #panel-floor2 .director-left-cell[data-ward="secondFloor"] {
-    border-right: 2px solid #cbd5e1 !important;
+  /* 💡 1층 의료진-여자 2px 구분선 기둥 (의사 박스와 슬롯 박스의 시각적 정중앙인 +1.5rem 적용) */
+  #panel-floor1::before {
+    content: "" !important;
+    position: absolute !important;
+    left: calc(2rem + 100px + 1.5rem) !important; /* 156px 지점 (정중앙 정렬) */
+    top: 1.5rem !important; /* 글자 사이 빈공간까지 수직선 위로 연장해 예쁘게 정렬 */
+    bottom: 1.5rem !important;
+    width: 2px !important;
+    background-color: #cbd5e1 !important;
+    z-index: 2 !important;
   }
 
-  /* 💡 여자-남자 치료실 사이 정중앙에 정확히 4px 구분선 셋팅 (absolute 꼼수 제거) */
-  #panel-floor1 .female-header,
-  #panel-floor1 .slots-container[data-ward="female"] {
-    border-right: 4px solid #cbd5e1 !important;
+  /* 💡 1층 여자-남자 4px 구분선 기둥 (빨간선과 파란선 갭 32px의 정중앙에 정확히 위치시킴) */
+  #panel-floor1::after {
+    content: "" !important;
+    position: absolute !important;
+    left: calc(50% + 50px + 1rem) !important; /* 갭 절반인 1rem(16px)을 더해 정확히 가로선 중앙 매칭 */
+    top: 1.5rem !important; /* 글자 사이 빈공간까지 수직선 위로 연장해 예쁘게 정렬 */
+    bottom: 1.5rem !important;
+    width: 4px !important;
+    background-color: #cbd5e1 !important;
+    z-index: 2 !important;
   }
-}
+
+  /* 💡 2층 의료진-2층슬롯 2px 구분선 기둥 (1층과 동일하게 +1.5rem 중앙 오프셋 적용) */
+  #panel-floor2::before {
+    content: "" !important;
+    position: absolute !important;
+    left: calc(2rem + 100px + 1.5rem) !important; /* 156px 지점 (정중앙 정렬) */
+    top: 1.5rem !important; /* 글자 사이 빈공간까지 수직선 위로 연장해 예쁘게 정렬 */
+    bottom: 1.5rem !important;
+    width: 2px !important;
+    background-color: #cbd5e1 !important;
+    z-index: 2 !important;
+  }
 
 /* Vertical line (Divider) between doctor tags column and slots */
 .vertical-divider {
