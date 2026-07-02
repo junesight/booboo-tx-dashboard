@@ -1736,6 +1736,8 @@ body[data-active-tab="floor2"] #panel-floor2 {
   .male-ward-section .left-header,
   .male-ward-section .director-left-cell {
     display: flex !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
   }
 
   .male-ward-section .board-grid {
