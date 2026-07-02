@@ -265,14 +265,11 @@ body[data-active-tab="floor2"] #panel-floor2 {
     margin: 0 auto !important;
   }
 
-  /* On PC (desktop), hide the male ward doctor tags to match 3-column look */
+  /* On PC (desktop), hide the male ward doctor tags visually but preserve layout space */
   .male-ward-section .left-header,
   .male-ward-section .director-left-cell {
-    display: none !important;
-  }
-
-  .male-ward-section .board-grid {
-    grid-template-columns: 1fr !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
   }
 
   .male-ward-section {
@@ -287,9 +284,6 @@ body[data-active-tab="floor2"] #panel-floor2 {
     column-gap: 1.25rem;
     row-gap: 1.25rem;
   }
-  .male-ward-section .board-grid {
-    grid-template-columns: 1fr !important;
-  }
   .board-grid > * {
     padding-top: 1.2rem;
     padding-bottom: 1.2rem;
@@ -300,19 +294,12 @@ body[data-active-tab="floor2"] #panel-floor2 {
   .male-ward-section {
     border-left: 4px solid #cbd5e1;
   }
+}
 
-  body[data-active-tab="all"] .female-ward-section,
-  body[data-active-tab="floor1"] .female-ward-section {
-    flex: 0 0 calc(50% + 42px - 1rem) !important;
-    width: calc(50% + 42px - 1rem) !important;
-    max-width: calc(50% + 42px - 1rem) !important;
-  }
-  body[data-active-tab="all"] .male-ward-section,
-  body[data-active-tab="floor1"] .male-ward-section {
-    flex: 0 0 calc(50% - 42px - 1rem) !important;
-    width: calc(50% - 42px - 1rem) !important;
-    max-width: calc(50% - 42px - 1rem) !important;
-  }
+/* Vertical line between doctor tags column and slots */
+.director-left-cell,
+.left-header {
+  border-right: 2px solid #cbd5e1 !important;
 }
 
 /* Grid Headers */
