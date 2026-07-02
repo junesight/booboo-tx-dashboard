@@ -416,13 +416,6 @@ body[data-active-tab="floor2"] #panel-floor2 {
     z-index: 2 !important;
   }
 
-  /* 남자 셀 border-left 제거 (이전 시도 잔여물 초기화) */
-  #panel-floor1 .male-header,
-  #panel-floor1 .slots-container[data-ward="male"] {
-    border-left: none !important;
-    margin-left: 0 !important;
-    padding-left: 0 !important;
-  }
 
   /* 💡 2층 의료진-슬롯 2px 구분선 (전체보기: +0.5rem) */
   #panel-floor2::before {
@@ -439,6 +432,13 @@ body[data-active-tab="floor2"] #panel-floor2 {
   /* 💡 2층 단독 뷰: 패널이 전체폭이라 갭 정중앙(+1rem)으로 보정 */
   body[data-active-tab="floor2"] #panel-floor2::before {
     left: calc(2rem + 100px + 1rem) !important;
+  }
+
+  /* 💡 1층/2층 단독 뷰: 배경 색상 박스 전체 크기는 유지하되, 내부 패딩과 간격(gap)을 줄여 개별 슬롯의 크기를 키움 */
+  body[data-active-tab="floor1"] .slots-container,
+  body[data-active-tab="floor2"] .slots-container {
+    padding: 0.4rem !important;
+    gap: 0.35rem !important;
   }
 }
 
@@ -1728,8 +1728,8 @@ body[data-active-tab="floor2"] #panel-floor2 {
     padding-bottom: 0.8rem !important;
   }
   body[data-active-tab="all"] .slots-container {
-    padding: 0.55rem 0.6rem;
-    gap: 0.5rem;
+    padding: 0.35rem 0.4rem !important;
+    gap: 0.35rem !important;
   }
   body[data-active-tab="all"] .director-left-cell {
     flex-direction: column !important;
@@ -1756,8 +1756,8 @@ body[data-active-tab="floor2"] #panel-floor2 {
     font-size: 0.7rem;
   }
   body[data-active-tab="all"] .slot {
-    max-width: 64px;
-    max-height: 64px;
+    max-width: 72px !important;
+    max-height: 72px !important;
   }
   body[data-active-tab="all"] .slot-magnet {
     font-size: 2.15rem;
