@@ -276,18 +276,30 @@ body[data-active-tab="floor2"] #panel-floor2 {
   #panel-floor2 {
     display: none !important;
   }
-  body[data-active-tab="all"] #panel-floor1,
+  body[data-active-tab="all"] #panel-floor1 {
+    display: grid !important;
+    grid-template-columns: minmax(100px, 100px) 1fr 1fr !important;
+    column-gap: 2rem !important;
+    row-gap: 0.75rem !important;
+    position: relative !important;
+  }
   body[data-active-tab="floor1"] #panel-floor1 {
     display: grid !important;
-    grid-template-columns: 100px 1fr 1fr !important;
+    grid-template-columns: minmax(100px, 100px) 1fr 1fr !important;
     column-gap: 2rem !important;
     row-gap: 1.5rem !important;
     position: relative !important;
   }
-  body[data-active-tab="all"] #panel-floor2,
+  body[data-active-tab="all"] #panel-floor2 {
+    display: grid !important;
+    grid-template-columns: minmax(100px, 100px) 1fr !important;
+    column-gap: 2rem !important;
+    row-gap: 0.75rem !important;
+    position: relative !important;
+  }
   body[data-active-tab="floor2"] #panel-floor2 {
     display: grid !important;
-    grid-template-columns: 100px 1fr !important;
+    grid-template-columns: minmax(100px, 100px) 1fr !important;
     column-gap: 2rem !important;
     row-gap: 1.5rem !important;
     position: relative !important;
@@ -300,17 +312,17 @@ body[data-active-tab="floor2"] #panel-floor2 {
     display: contents !important;
   }
 
-  /* 전체보기 뷰에서 2층 판넬의 정렬을 좌측(1층 여자 치료실 라인)으로 배치 */
+  /* 전체보기 뷰에서 2층 판넬 폭 = 여자치료실 슬롯과 동일폭 (border-box 기준 정확 계산) */
   body[data-active-tab="all"] #panel-floor2 {
-    width: calc(50% + 50px - 1rem) !important;
-    max-width: calc(50% + 50px - 1rem) !important;
-    margin: 0 !important; /* 좌측 정렬 */
+    width: calc(50% + 50px + 2rem) !important;
+    max-width: calc(50% + 50px + 2rem) !important;
+    margin: 0 !important;
   }
   /* 2층 단독 뷰에서만 화면 중앙에 배치 */
   body[data-active-tab="floor2"] #panel-floor2 {
-    width: calc(50% + 50px - 1rem) !important;
-    max-width: calc(50% + 50px - 1rem) !important;
-    margin: 0 auto !important; /* 중앙 정렬 */
+    width: calc(50% + 50px + 2rem) !important;
+    max-width: calc(50% + 50px + 2rem) !important;
+    margin: 0 auto !important;
   }
 
   /* 속성 선택자를 사용한 1층 3x5 그리드 자식 셀 매핑 (contents 선택자 버그 완전 회피) */
@@ -356,58 +368,71 @@ body[data-active-tab="floor2"] #panel-floor2 {
   #panel-floor2 .slots-container[data-ward="secondFloor"][data-director="3"] { grid-column: 2 !important; grid-row: 4 !important; }
   #panel-floor2 .slots-container[data-ward="secondFloor"][data-director="4"] { grid-column: 2 !important; grid-row: 5 !important; }
 
-  /* 각 셀 내부 박스들을 좌측 상단으로 동일 정렬 */
-  .director-left-cell,
+  /* slots-container와 director-left-cell 모두 stretch → 동일한 행 높이 */
   .slots-container {
-    align-self: start !important;
+    align-self: stretch !important;
     justify-self: start !important;
     width: 100% !important;
   }
 
-  /* 의사명 셀 세로 정렬 및 패딩 콤팩트화 */
   .director-left-cell {
+    align-self: stretch !important;
+    justify-self: start !important;
+    width: 100% !important;
+    display: flex !important;
     flex-direction: column !important;
     justify-content: center !important;
     align-items: center !important;
-    gap: 0.25rem !important;
-    padding: 0.25rem 0.4rem !important;
+    gap: 0.5rem !important;
+    padding: 0.5rem 0.4rem !important;
   }
 
-  /* 💡 1층 의료진-여자 2px 구분선 기둥 (의사 박스와 슬롯 박스의 시각적 정중앙인 +1.5rem 적용) */
+  /* 💡 1층 의료진-여자 2px 구분선 (전체보기: 시각적 보정 +0.5rem) */
   #panel-floor1::before {
     content: "" !important;
     position: absolute !important;
-    left: calc(2rem + 100px + 1.5rem) !important; /* 156px 지점 (정중앙 정렬) */
-    top: 1.5rem !important; /* 글자 사이 빈공간까지 수직선 위로 연장해 예쁘게 정렬 */
-    bottom: 1.5rem !important;
+    left: calc(2rem + 100px + 0.5rem) !important;
+    top: 1.25rem !important;
+    bottom: 1.25rem !important;
     width: 2px !important;
     background-color: #cbd5e1 !important;
     z-index: 2 !important;
   }
 
-  /* 💡 1층 여자-남자 4px 구분선 기둥 (빨간선과 파란선 갭 32px의 정중앙에 정확히 위치시킴) */
+  /* 💡 1층 단독 뷰: 패널이 전체폭이라 갭 정중앙(+1rem)으로 보정 */
+  body[data-active-tab="floor1"] #panel-floor1::before {
+    left: calc(2rem + 100px + 1rem) !important;
+  }
+
+  /* 💡 1층 여자-남자 2px 구분선 */
   #panel-floor1::after {
     content: "" !important;
     position: absolute !important;
-    left: calc(50% + 50px + 1rem) !important; /* 갭 절반인 1rem(16px)을 더해 정확히 가로선 중앙 매칭 */
-    top: 1.5rem !important; /* 글자 사이 빈공간까지 수직선 위로 연장해 예쁘게 정렬 */
-    bottom: 1.5rem !important;
-    width: 4px !important;
-    background-color: #cbd5e1 !important;
-    z-index: 2 !important;
-  }
-
-  /* 💡 2층 의료진-2층슬롯 2px 구분선 기둥 (1층과 동일하게 +1.5rem 중앙 오프셋 적용) */
-  #panel-floor2::before {
-    content: "" !important;
-    position: absolute !important;
-    left: calc(2rem + 100px + 1.5rem) !important; /* 156px 지점 (정중앙 정렬) */
-    top: 1.5rem !important; /* 글자 사이 빈공간까지 수직선 위로 연장해 예쁘게 정렬 */
-    bottom: 1.5rem !important;
+    left: calc(50% + 50px + 1rem) !important;
+    top: 1.25rem !important;
+    bottom: 1.25rem !important;
     width: 2px !important;
     background-color: #cbd5e1 !important;
     z-index: 2 !important;
   }
+
+  /* 💡 2층 의료진-슬롯 2px 구분선 (전체보기: +0.5rem) */
+  #panel-floor2::before {
+    content: "" !important;
+    position: absolute !important;
+    left: calc(2rem + 100px + 0.5rem) !important;
+    top: 1.25rem !important;
+    bottom: 1.25rem !important;
+    width: 2px !important;
+    background-color: #cbd5e1 !important;
+    z-index: 2 !important;
+  }
+
+  /* 💡 2층 단독 뷰: 패널이 전체폭이라 갭 정중앙(+1rem)으로 보정 */
+  body[data-active-tab="floor2"] #panel-floor2::before {
+    left: calc(2rem + 100px + 1rem) !important;
+  }
+}
 
 /* Vertical line (Divider) between doctor tags column and slots */
 .vertical-divider {
@@ -1061,7 +1086,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
   font-size: 0.68rem;
   font-weight: 700;
   display: block;
-  margin-top: 1px;
+  margin-top: 8px;
 }
 
 /* Text Magnet custom sizes (for '린다', '상담', '초음파', '추나') - Expanded to fill slot */
@@ -1666,10 +1691,14 @@ body[data-active-tab="floor2"] #panel-floor2 {
 
 /* 16:9 Viewport Height Optimization for '전체보기' (All View) - Middle Ground Spacing */
 @media (min-width: 769px) {
-  body[data-active-tab="all"] .app-container {
+  body[data-active-tab="all"] .app-container,
+  body[data-active-tab="floor1"] .app-container,
+  body[data-active-tab="floor2"] .app-container {
     padding: 1.2rem 2rem;
   }
-  body[data-active-tab="all"] .app-header {
+  body[data-active-tab="all"] .app-header,
+  body[data-active-tab="floor1"] .app-header,
+  body[data-active-tab="floor2"] .app-header {
     margin-bottom: 1.2rem;
     padding-bottom: 0.8rem;
   }
@@ -1699,6 +1728,17 @@ body[data-active-tab="floor2"] #panel-floor2 {
   body[data-active-tab="all"] .director-tag {
     padding: 0.45rem 0.5rem;
     font-size: 1.12rem;
+  }
+
+  /* 1층/2층 단독 뷰: director-tag 상하 패딩 여유 있게 */
+  body[data-active-tab="floor1"] .director-tag,
+  body[data-active-tab="floor2"] .director-tag {
+    padding: 0.75rem 0.6rem;
+    font-size: 1.2rem;
+  }
+  /* 전체보기: 이름-야간 간격 타이트하게 */
+  body[data-active-tab="all"] .director-left-cell {
+    gap: 0.2rem !important;
   }
   body[data-active-tab="all"] .leave-time-btn {
     padding: 0.22rem 0.45rem;
