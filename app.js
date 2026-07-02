@@ -84,14 +84,8 @@ let dragSource = {
   index: null
 };
 
-// Track the last clicked waiting slot (index >= 1) for double-click confirmation
-let lastClickedWaitingItem = {
-  ward: null,
-  docName: null,
-  index: null,
-  val: null,
-  timestamp: 0
-};
+// Track active revert timeout for waiting slot delete confirmation
+let waitingRevertTimeout = null;
 
 // Track drag type ('magnet' | 'row') and drag source row index/floor
 let dragType = null; // 'magnet' | 'row'
@@ -960,36 +954,41 @@ function isArrowItem(val) {
           saveState();
           updateUI();
         } else {
-          // INDEX >= 1: Requires double-click within 3 seconds to delete (tracked passively by local timestamp)
-          const now = Date.now();
-          const cleanItemVal = isProgress ? currentVal.substring(0, currentVal.length - 9) : currentVal;
-          const cleanItemValStr = String(cleanItemVal);
+          // INDEX >= 1: Requires double-click within 3 seconds to delete (indicated visually by red styling)
+          const isConfirming = slot.classList.contains('delete-confirm');
           
-          if (lastClickedWaitingItem.ward === ward &&
-              lastClickedWaitingItem.docName === docName &&
-              lastClickedWaitingItem.val === cleanItemValStr &&
-              (now - lastClickedWaitingItem.timestamp) <= 3000) {
+          if (isConfirming) {
+            console.log(`[Click Debug] Second click on waiting item at index ${index} while red. Deleting.`);
+            if (waitingRevertTimeout) {
+              clearTimeout(waitingRevertTimeout);
+              waitingRevertTimeout = null;
+            }
             
-            console.log(`[Click Debug] Double click confirmed on waiting item at index ${index} within 3s. Deleting.`);
-            // Reset click tracking
-            lastClickedWaitingItem = { ward: null, docName: null, index: null, val: null, timestamp: 0 };
-            
+            // Delete patient
             state[ward][docName].splice(index, 1);
             compactRowState(ward, docName);
             saveState();
             updateUI();
           } else {
-            console.log(`[Click Debug] First click on waiting item at index ${index}. Recording timestamp for 3s.`);
-            lastClickedWaitingItem = {
-              ward,
-              docName,
-              index,
-              val: cleanItemValStr,
-              timestamp: now
-            };
-            // Note: We do NOT modify the state or Supabase on the first click of a waiting item.
-            // This prevents the item from ever getting stuck as '_progress' in the database!
-            // It remains visually normal (gray) and naturally expires locally after 3 seconds.
+            console.log(`[Click Debug] First click on waiting item at index ${index}. Activating 3s red confirmation.`);
+            
+            // Clear any other active confirmations
+            document.querySelectorAll('.slot.delete-confirm').forEach(el => {
+              el.classList.remove('delete-confirm');
+            });
+            if (waitingRevertTimeout) {
+              clearTimeout(waitingRevertTimeout);
+            }
+            
+            // Turn this slot red
+            slot.classList.add('delete-confirm');
+            
+            // Start 3 second timer to revert back to normal
+            waitingRevertTimeout = setTimeout(() => {
+              console.log(`[Click Debug] Confirmation expired. Removing red class.`);
+              slot.classList.remove('delete-confirm');
+              waitingRevertTimeout = null;
+            }, 3000);
           }
         }
         console.log(`[Click Debug] State after click:`, JSON.stringify(state[ward][docName]));
