@@ -84,8 +84,14 @@ let dragSource = {
   index: null
 };
 
-// Track active revert timeouts for waiting slots (index >= 1)
-let waitingRevertTimeouts = {};
+// Track the last clicked waiting slot (index >= 1) for double-click confirmation
+let lastClickedWaitingItem = {
+  ward: null,
+  docName: null,
+  index: null,
+  val: null,
+  timestamp: 0
+};
 
 // Track drag type ('magnet' | 'row') and drag source row index/floor
 let dragType = null; // 'magnet' | 'row'
@@ -295,9 +301,6 @@ function setupSupabaseRealtime() {
       (payload) => {
         const newData = payload.new.data;
         if (newData) {
-          // Clear active timeouts since the state is being updated remotely
-          Object.values(waitingRevertTimeouts).forEach(clearTimeout);
-          waitingRevertTimeouts = {};
 
           if (newData.state) Object.assign(state, newData.state);
           if (newData.leaveTimes) Object.assign(leaveTimes, newData.leaveTimes);
@@ -925,36 +928,36 @@ function isArrowItem(val) {
           saveState();
           updateUI();
         } else {
-          // INDEX >= 1: Requires double-click within 3 seconds to delete
-          const key = `${ward}_${docName}_${index}`;
-          if (isProgress) {
-            console.log(`[Click Debug] Second click on waiting item at index ${index} within 3s. Deleting.`);
-            if (waitingRevertTimeouts[key]) {
-              clearTimeout(waitingRevertTimeouts[key]);
-              delete waitingRevertTimeouts[key];
-            }
+          // INDEX >= 1: Requires double-click within 3 seconds to delete (tracked passively by local timestamp)
+          const now = Date.now();
+          const cleanItemVal = isProgress ? currentVal.substring(0, currentVal.length - 9) : currentVal;
+          const cleanItemValStr = String(cleanItemVal);
+          
+          if (lastClickedWaitingItem.ward === ward &&
+              lastClickedWaitingItem.docName === docName &&
+              lastClickedWaitingItem.val === cleanItemValStr &&
+              (now - lastClickedWaitingItem.timestamp) <= 3000) {
+            
+            console.log(`[Click Debug] Double click confirmed on waiting item at index ${index} within 3s. Deleting.`);
+            // Reset click tracking
+            lastClickedWaitingItem = { ward: null, docName: null, index: null, val: null, timestamp: 0 };
+            
             state[ward][docName].splice(index, 1);
             compactRowState(ward, docName);
             saveState();
             updateUI();
           } else {
-            console.log(`[Click Debug] First click on waiting item at index ${index}. Activating 3s delete window.`);
-            state[ward][docName][index] = String(currentVal) + '_progress';
-            saveState();
-            updateUI();
-            
-            waitingRevertTimeouts[key] = setTimeout(() => {
-              console.log(`[Click Debug] Reverting waiting item at index ${index} back to normal.`);
-              const val = state[ward][docName][index];
-              if (val && typeof val === 'string' && val.endsWith('_progress')) {
-                const cleanVal = val.substring(0, val.length - 9);
-                const parsed = parseInt(cleanVal, 10);
-                state[ward][docName][index] = (!isNaN(parsed) && String(parsed) === cleanVal) ? parsed : cleanVal;
-                saveState();
-                updateUI();
-              }
-              delete waitingRevertTimeouts[key];
-            }, 3000);
+            console.log(`[Click Debug] First click on waiting item at index ${index}. Recording timestamp for 3s.`);
+            lastClickedWaitingItem = {
+              ward,
+              docName,
+              index,
+              val: cleanItemValStr,
+              timestamp: now
+            };
+            // Note: We do NOT modify the state or Supabase on the first click of a waiting item.
+            // This prevents the item from ever getting stuck as '_progress' in the database!
+            // It remains visually normal (gray) and naturally expires locally after 3 seconds.
           }
         }
         console.log(`[Click Debug] State after click:`, JSON.stringify(state[ward][docName]));
@@ -989,9 +992,6 @@ function isArrowItem(val) {
     clearTimeout(longPressTimer);
     isLongPress = false;
     
-    // Clear active timeouts when drag starts to prevent phantom reverts
-    Object.values(waitingRevertTimeouts).forEach(clearTimeout);
-    waitingRevertTimeouts = {};
     
     const magnet = e.target.closest('.slot-magnet');
     const cell = e.target.closest('.director-left-cell');
