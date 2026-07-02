@@ -534,7 +534,7 @@ function updateUI() {
         if (cell) cell.classList.remove('dr-bobin', 'dr-junhyun', 'dr-youngyun', 'dr-jihyun', 'dr-taeyun', 'dr-duho', 'off-duty');
         
         if (isOff) {
-          tag.innerHTML = `${docName}<br><span style="font-size: 0.8rem; font-weight: 500; opacity: 0.85;">(퇴근)</span>`;
+          tag.textContent = docName;
           tag.classList.add('off-duty');
           if (cell) cell.classList.add('off-duty');
         } else {
@@ -569,7 +569,7 @@ function updateUI() {
       if (cell) cell.classList.remove('dr-bobin', 'dr-junhyun', 'dr-youngyun', 'dr-jihyun', 'dr-taeyun', 'dr-duho', 'off-duty');
       
       if (isOff) {
-        tag.innerHTML = `${docName}<br><span style="font-size: 0.8rem; font-weight: 500; opacity: 0.85;">(퇴근)</span>`;
+        tag.textContent = docName;
         tag.classList.add('off-duty');
         if (cell) cell.classList.add('off-duty');
       } else {
