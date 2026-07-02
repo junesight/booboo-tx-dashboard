@@ -416,6 +416,14 @@ body[data-active-tab="floor2"] #panel-floor2 {
     z-index: 2 !important;
   }
 
+  /* 남자 셀 border-left 제거 (이전 시도 잔여물 초기화) */
+  #panel-floor1 .male-header,
+  #panel-floor1 .slots-container[data-ward="male"] {
+    border-left: none !important;
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+  }
+
   /* 💡 2층 의료진-슬롯 2px 구분선 (전체보기: +0.5rem) */
   #panel-floor2::before {
     content: "" !important;
@@ -717,6 +725,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
 
 /* Slot Styling */
 .slot {
+  width: 100%;
   aspect-ratio: 1 / 1;
   border: 2px dashed var(--slot-empty-border);
   background: var(--slot-empty-bg);
@@ -729,6 +738,8 @@ body[data-active-tab="floor2"] #panel-floor2 {
   transition: all 0.2s ease;
   user-select: none;
   container-type: inline-size;
+  justify-self: center;
+  align-self: center;
 }
 
 .slot::before {
