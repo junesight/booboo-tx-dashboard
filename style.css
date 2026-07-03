@@ -126,6 +126,22 @@ body {
   gap: 0.35rem;
 }
 
+.action-stack-right {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  align-items: flex-end;
+}
+
+#connection-status {
+  height: 35px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin: 0;
+  padding-right: 0.4rem;
+}
+
 .live-clock {
   font-family: 'Outfit', 'Noto Sans KR', monospace;
   font-variant-numeric: tabular-nums;
@@ -1858,14 +1874,6 @@ body[data-active-tab="floor2"] #panel-floor2 {
 
   .header-status {
     display: contents !important;
-  }
-
-  #connection-status {
-    grid-column: 1 !important; /* Left column */
-    grid-row: 1 / span 2 !important;
-    justify-self: start !important;
-    align-self: start !important;
-    margin-top: 0.4rem !important;
   }
 
   .header-actions {
