@@ -1311,6 +1311,30 @@ function isArrowItem(val) {
     }
   });
 
+  // Fullscreen Button
+  const btnFullscreen = document.getElementById('btn-fullscreen');
+  if (btnFullscreen) {
+    btnFullscreen.addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+          console.error(`Error attempting to enable fullscreen: ${err.message}`);
+        });
+      } else {
+        document.exitFullscreen();
+      }
+    });
+
+    document.addEventListener('fullscreenchange', () => {
+      if (document.fullscreenElement) {
+        btnFullscreen.innerHTML = '📴 전체화면 취소';
+        btnFullscreen.classList.add('active');
+      } else {
+        btnFullscreen.innerHTML = '🖥️ 전체화면';
+        btnFullscreen.classList.remove('active');
+      }
+    });
+  }
+
   // Reset All Button
   const btnResetAll = document.getElementById('btn-reset-all');
   if (btnResetAll) {

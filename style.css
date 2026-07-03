@@ -1492,6 +1492,48 @@ body[data-active-tab="floor2"] #panel-floor2 {
   pointer-events: none !important;
 }
 
+.btn-fullscreen {
+  padding: 0.45rem 0.9rem;
+  background: rgba(75, 85, 99, 0.06);
+  color: #4b5563;
+  border: 1px solid rgba(75, 85, 99, 0.15);
+  border-radius: 8px;
+  font-family: var(--font-family);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.btn-fullscreen:hover {
+  background: #4b5563;
+  color: #ffffff;
+  border-color: #4b5563;
+  box-shadow: 0 4px 10px rgba(75, 85, 99, 0.15);
+}
+
+.btn-fullscreen.active {
+  background: rgba(239, 68, 68, 0.06);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.15);
+}
+
+.btn-fullscreen.active:hover {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.15);
+}
+
+@media (max-width: 1023px) {
+  .btn-fullscreen {
+    display: none !important;
+  }
+}
+
 .btn-reset-all {
   padding: 0.45rem 0.9rem;
   background: rgba(239, 68, 68, 0.06);
