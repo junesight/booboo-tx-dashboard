@@ -1492,11 +1492,13 @@ body[data-active-tab="floor2"] #panel-floor2 {
   pointer-events: none !important;
 }
 
-.btn-fullscreen {
+.btn-fullscreen,
+.btn-reset-all,
+.btn-sync-schedule {
+  width: 140px;
+  box-sizing: border-box;
+  justify-content: center;
   padding: 0.45rem 0.9rem;
-  background: rgba(75, 85, 99, 0.06);
-  color: #4b5563;
-  border: 1px solid rgba(75, 85, 99, 0.15);
   border-radius: 8px;
   font-family: var(--font-family);
   font-size: 0.85rem;
@@ -1506,6 +1508,12 @@ body[data-active-tab="floor2"] #panel-floor2 {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+}
+
+.btn-fullscreen {
+  background: rgba(75, 85, 99, 0.06);
+  color: #4b5563;
+  border: 1px solid rgba(75, 85, 99, 0.15);
 }
 
 .btn-fullscreen:hover {
@@ -1535,19 +1543,9 @@ body[data-active-tab="floor2"] #panel-floor2 {
 }
 
 .btn-reset-all {
-  padding: 0.45rem 0.9rem;
   background: rgba(239, 68, 68, 0.06);
   color: #ef4444;
   border: 1px solid rgba(239, 68, 68, 0.15);
-  border-radius: 8px;
-  font-family: var(--font-family);
-  font-size: 0.85rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
 }
 
 .btn-reset-all:hover {
@@ -1558,19 +1556,9 @@ body[data-active-tab="floor2"] #panel-floor2 {
 }
 
 .btn-sync-schedule {
-  padding: 0.45rem 0.9rem;
   background: rgba(37, 99, 235, 0.06);
   color: #2563eb;
   border: 1px solid rgba(37, 99, 235, 0.15);
-  border-radius: 8px;
-  font-family: var(--font-family);
-  font-size: 0.85rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
 }
 
 .btn-sync-schedule:hover {
@@ -1885,9 +1873,9 @@ body[data-active-tab="floor2"] #panel-floor2 {
   }
 
   .header-actions button {
-    width: 120px !important;
+    width: 140px !important;
     padding: 0.4rem 0.6rem !important;
-    font-size: 0.8rem !important;
+    font-size: 0.82rem !important;
     justify-content: center !important;
   }
 }

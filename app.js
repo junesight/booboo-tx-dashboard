@@ -1349,7 +1349,7 @@ function isArrowItem(val) {
   const btnSyncSchedule = document.getElementById('btn-sync-schedule');
   if (btnSyncSchedule) {
     btnSyncSchedule.addEventListener('click', () => {
-      if (confirm('오늘의 의료진 근무 및 퇴근 시간을 Supabase에서 자동으로 가져오시겠습니까?')) {
+      if (confirm('오늘의 의료진 근무 및 퇴근 시간을 Supabase에서 자동으로 동기화하시겠습니까?')) {
         syncScheduleFromSupabase();
       }
     });
@@ -1733,7 +1733,7 @@ async function syncScheduleFromSupabase({ silent = false } = {}) {
   const syncBtn = document.getElementById('btn-sync-schedule');
   if (syncBtn) {
     syncBtn.disabled = true;
-    syncBtn.innerHTML = '🔄 가져오는 중...';
+    syncBtn.innerHTML = '🔄 동기화 중...';
   }
   
   try {
@@ -1848,18 +1848,18 @@ async function syncScheduleFromSupabase({ silent = false } = {}) {
     updateUI();
     
     if (!silent) {
-      alert(`오늘(${todayStr}) 일정 가져오기 완료!\n\n진료 원장님: ${workingDoctors.map(d => d.name).join(', ')}\n휴무 원장님: ${offDutyDoctorsList.map(d => d.name).join(', ')}`);
+      alert(`오늘(${todayStr}) 일정 동기화 완료!\n\n진료 원장님: ${workingDoctors.map(d => d.name).join(', ')}\n휴무 원장님: ${offDutyDoctorsList.map(d => d.name).join(', ')}`);
     }
     
   } catch (error) {
     console.error('Error syncing schedules:', error);
     if (!silent) {
-      alert('일정을 가져오는데 실패했습니다: ' + error.message);
+      alert('일정을 동기화하는데 실패했습니다: ' + error.message);
     }
   } finally {
     if (syncBtn) {
       syncBtn.disabled = false;
-      syncBtn.innerHTML = '📅 일정 가져오기';
+      syncBtn.innerHTML = '📅 일정 동기화';
     }
   }
 }
