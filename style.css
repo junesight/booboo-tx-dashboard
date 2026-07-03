@@ -1664,7 +1664,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
   width: fit-content;
 }
 
-@media (min-width: 1251px) {
+@media (min-width: 1401px) {
   .tabs-container {
     position: absolute;
     left: 50%;
@@ -1724,7 +1724,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
   box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
 }
 
-@media (max-width: 1250px) {
+@media (max-width: 1400px) {
   .app-header {
     flex-direction: column;
     align-items: center;
@@ -1846,8 +1846,8 @@ body[data-active-tab="floor2"] #panel-floor2 {
 
 
 
-/* Header styles for Tablet & Mid-PC overlap (769px to 1250px) */
-@media (min-width: 769px) and (max-width: 1250px) {
+/* Header styles for Tablet & Mid-PC overlap (769px to 1400px) */
+@media (min-width: 769px) and (max-width: 1400px) {
   .app-header {
     display: grid !important;
     grid-template-columns: 140px 1fr 140px !important;
