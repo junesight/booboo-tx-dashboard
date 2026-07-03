@@ -114,32 +114,39 @@ body {
 }
 
 .header-actions {
-  display: flex;
-  flex-direction: row;
-  gap: 0.75rem;
-  align-items: flex-end;
-}
-
-.action-stack-left {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.action-stack-right {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  align-items: flex-end;
+  display: grid;
+  grid-template-columns: 140px 140px;
+  grid-template-rows: auto auto;
+  column-gap: 0.75rem;
+  row-gap: 0.35rem;
+  justify-items: end;
+  align-items: center;
 }
 
 #connection-status {
+  grid-column: 2;
+  grid-row: 1;
   height: 35px;
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
   margin: 0;
   padding-right: 0.4rem;
+}
+
+.btn-fullscreen {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.btn-sync-schedule {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.btn-reset-all {
+  grid-column: 2;
+  grid-row: 2;
 }
 
 .live-clock {
@@ -1751,21 +1758,17 @@ body[data-active-tab="floor2"] #panel-floor2 {
     gap: 0.5rem;
     width: 100%;
   }
-  .action-stack-left,
-  .action-stack-right {
-    display: contents !important;
+  .header-actions {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 0.35rem !important;
+    width: 100% !important;
   }
   #connection-status {
-    order: 1 !important;
     height: auto !important;
     padding: 0.2rem 0 !important;
     justify-content: center !important;
-  }
-  .btn-sync-schedule {
-    order: 3 !important;
-  }
-  .btn-reset-all {
-    order: 4 !important;
   }
 }
 
@@ -1903,28 +1906,10 @@ body[data-active-tab="floor2"] #panel-floor2 {
     width: auto !important;
   }
 
-  .action-stack-left,
-  .action-stack-right {
-    display: contents !important;
-  }
-
   #connection-status {
-    order: 1 !important;
     height: auto !important;
     padding: 0.2rem 0 !important;
     justify-content: flex-end !important;
-  }
-
-  .btn-fullscreen {
-    order: 2 !important;
-  }
-
-  .btn-sync-schedule {
-    order: 3 !important;
-  }
-
-  .btn-reset-all {
-    order: 4 !important;
   }
 
   .header-actions button {
