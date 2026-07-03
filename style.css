@@ -1751,6 +1751,22 @@ body[data-active-tab="floor2"] #panel-floor2 {
     gap: 0.5rem;
     width: 100%;
   }
+  .action-stack-left,
+  .action-stack-right {
+    display: contents !important;
+  }
+  #connection-status {
+    order: 1 !important;
+    height: auto !important;
+    padding: 0.2rem 0 !important;
+    justify-content: center !important;
+  }
+  .btn-sync-schedule {
+    order: 3 !important;
+  }
+  .btn-reset-all {
+    order: 4 !important;
+  }
 }
 
 /* 16:9 Viewport Height Optimization for '전체보기' (All View) - Middle Ground Spacing */
@@ -1889,10 +1905,26 @@ body[data-active-tab="floor2"] #panel-floor2 {
 
   .action-stack-left,
   .action-stack-right {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: flex-end !important;
-    gap: 0.35rem !important;
+    display: contents !important;
+  }
+
+  #connection-status {
+    order: 1 !important;
+    height: auto !important;
+    padding: 0.2rem 0 !important;
+    justify-content: flex-end !important;
+  }
+
+  .btn-fullscreen {
+    order: 2 !important;
+  }
+
+  .btn-sync-schedule {
+    order: 3 !important;
+  }
+
+  .btn-reset-all {
+    order: 4 !important;
   }
 
   .header-actions button {
