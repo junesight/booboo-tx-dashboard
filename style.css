@@ -115,9 +115,15 @@ body {
 
 .header-actions {
   display: flex;
+  flex-direction: row;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.action-stack-left {
+  display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  align-items: flex-end;
 }
 
 .live-clock {
@@ -1868,8 +1874,9 @@ body[data-active-tab="floor2"] #panel-floor2 {
     justify-self: end !important;
     align-self: start !important;
     display: flex !important;
-    flex-direction: column !important;
-    gap: 0.35rem !important;
+    flex-direction: row !important;
+    align-items: flex-end !important;
+    gap: 0.75rem !important;
     width: auto !important;
   }
 
