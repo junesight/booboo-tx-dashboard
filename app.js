@@ -398,6 +398,46 @@ async function saveState() {
   }
 }
 
+// Save a single JSONB field path to Supabase atomically via RPC
+async function saveStateField(path, value) {
+  localStorage.setItem('clinic_treatment_state', JSON.stringify(state));
+  localStorage.setItem('clinic_leave_times', JSON.stringify(leaveTimes));
+  localStorage.setItem('clinic_off_duty_directors', JSON.stringify(offDutyDirectors));
+  localStorage.setItem('clinic_row_directors_floor1', JSON.stringify(rowDirectorsFloor1));
+  localStorage.setItem('clinic_row_directors_floor2', JSON.stringify(rowDirectorsFloor2));
+
+  if (supabaseClient) {
+    try {
+      const { error } = await supabaseClient
+        .rpc('update_clinic_state_field', {
+          p_path: path,
+          p_value: value
+        });
+      if (error) {
+        console.error(`Error saving field ${path.join('.')} to Supabase:`, error);
+      }
+    } catch (e) {
+      console.error(`Exception saving field ${path.join('.')} to Supabase:`, e);
+    }
+  }
+}
+
+// Save all ward states for a specific doctor atomically
+async function saveStateForDoctor(docName) {
+  localStorage.setItem('clinic_treatment_state', JSON.stringify(state));
+  if (supabaseClient) {
+    try {
+      await Promise.all([
+        supabaseClient.rpc('update_clinic_state_field', { p_path: ['state', 'female', docName], p_value: state.female[docName] || [] }),
+        supabaseClient.rpc('update_clinic_state_field', { p_path: ['state', 'male', docName], p_value: state.male[docName] || [] }),
+        supabaseClient.rpc('update_clinic_state_field', { p_path: ['state', 'secondFloor', docName], p_value: state.secondFloor[docName] || [] })
+      ]);
+    } catch (e) {
+      console.error(`Exception saving state for doctor ${docName}:`, e);
+    }
+  }
+}
+
 // Compact row state to remove nulls and pad/keep size accordingly
 function compactRowState(ward, docName) {
   if (!state[ward] || !state[ward][docName]) return;
@@ -430,7 +470,7 @@ function sanitizeState(shouldSave = true) {
   
   if (modified && shouldSave) {
     console.log('[Sanitize] Cleaned up phantom _progress suffixes from index >= 1 slots.');
-    saveState();
+    saveStateField(['state'], state);
   }
 }
 
@@ -866,7 +906,7 @@ function confirmCancelProgress() {
     const { ward, docName, index, cleanVal } = activeCancelSlot;
     const parsed = parseInt(cleanVal, 10);
     state[ward][docName][index] = (!isNaN(parsed) && String(parsed) === cleanVal) ? parsed : cleanVal;
-    saveState();
+    saveStateField(['state', ward, docName], state[ward][docName]);
     updateUI();
     closeCancelProgressModal();
     console.log(`[Long Press Debug] Reverted slot via custom modal: ${ward} | ${docName} | index ${index} back to waiting.`);
@@ -971,7 +1011,7 @@ function isArrowItem(val) {
             state[ward][docName][index] = String(currentVal) + '_progress';
             clearOtherWardsProgress(docName, ward);
           }
-          saveState();
+          saveStateForDoctor(docName);
           updateUI();
         } else {
           // INDEX >= 1: Requires double-click within 3 seconds to delete (indicated visually by red styling)
@@ -987,7 +1027,7 @@ function isArrowItem(val) {
             // Delete patient
             state[ward][docName].splice(index, 1);
             compactRowState(ward, docName);
-            saveState();
+            saveStateField(['state', ward, docName], state[ward][docName]);
             updateUI();
           } else {
             console.log(`[Click Debug] First click on waiting item at index ${index}. Activating 3s red confirmation.`);
@@ -1263,7 +1303,14 @@ function isArrowItem(val) {
             compactRowState(targetWard, targetDoc);
           }
           
-          saveState();
+          if (sourceDoc === targetDoc) {
+            saveStateField(['state', sourceWard, sourceDoc], state[sourceWard][sourceDoc]);
+          } else {
+            Promise.all([
+              saveStateField(['state', sourceWard, sourceDoc], state[sourceWard][sourceDoc]),
+              saveStateField(['state', targetWard, targetDoc], state[targetWard][targetDoc])
+            ]);
+          }
           updateUI();
         }
       }
@@ -1292,7 +1339,7 @@ function isArrowItem(val) {
     if (activeDirectorName !== null) {
       // Toggle off-duty state
       offDutyDirectors[activeDirectorName] = !offDutyDirectors[activeDirectorName];
-      saveState();
+      saveStateField(['offDutyDirectors', activeDirectorName], offDutyDirectors[activeDirectorName]);
       updateUI();
       closeDirectorModal();
     }
@@ -1559,7 +1606,7 @@ function selectBedNumber(num) {
       state[ward][docName][index] = num;
     }
     compactRowState(ward, docName);
-    saveState();
+    saveStateField(['state', ward, docName], state[ward][docName]);
     updateUI();
     closeModal();
   }
@@ -1578,7 +1625,7 @@ function clearActiveSlot() {
       handleQueueShift(ward, docName, index, clearedVal);
     }
     
-    saveState();
+    saveStateForDoctor(docName);
     updateUI();
     closeModal();
   }
@@ -1592,7 +1639,7 @@ function resetAllSlots() {
     state.male[d] = Array(8).fill(null);
     state.secondFloor[d] = Array(8).fill(null);
   });
-  saveState();
+  saveStateField(['state'], state);
   updateUI();
 }
 
@@ -1667,7 +1714,12 @@ function selectDoctor(docName) {
     directors[activeDirectorRow] = docName;
     offDutyDirectors[docName] = false; // Turn off off-duty state!
     
-    saveState();
+    const directorsField = activeDirectorFloor === 1 ? 'rowDirectorsFloor1' : 'rowDirectorsFloor2';
+    const directorsData = activeDirectorFloor === 1 ? rowDirectorsFloor1 : rowDirectorsFloor2;
+    Promise.all([
+      saveStateField([directorsField], directorsData),
+      saveStateField(['offDutyDirectors', docName], false)
+    ]);
     updateUI();
     closeDirectorModal();
   }
@@ -1713,7 +1765,7 @@ function openLeaveTimeModal(docName) {
 function selectLeaveTime(val) {
   if (activeLeaveTimeDoc !== null) {
     leaveTimes[activeLeaveTimeDoc] = val;
-    saveState();
+    saveStateField(['leaveTimes', activeLeaveTimeDoc], val);
     updateUI();
     closeLeaveTimeModal();
   }
@@ -1880,7 +1932,8 @@ function swapRows(floor, rowA, rowB) {
     directors[keyA] = directors[keyB];
     directors[keyB] = temp;
     
-    saveState();
+    const directorsField = floor === 1 ? 'rowDirectorsFloor1' : 'rowDirectorsFloor2';
+    saveStateField([directorsField], directors);
     updateUI();
   }
 }
