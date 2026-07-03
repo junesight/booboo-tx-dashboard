@@ -415,9 +415,13 @@ async function saveStateField(path, value) {
         });
       if (error) {
         console.error(`Error saving field ${path.join('.')} to Supabase:`, error);
+        // Fallback: If RPC not found (PGRST202) or any other DB error, use full upsert saveState()
+        console.warn('Falling back to full saveState() due to RPC failure.');
+        saveState();
       }
     } catch (e) {
       console.error(`Exception saving field ${path.join('.')} to Supabase:`, e);
+      saveState();
     }
   }
 }
@@ -427,13 +431,19 @@ async function saveStateForDoctor(docName) {
   localStorage.setItem('clinic_treatment_state', JSON.stringify(state));
   if (supabaseClient) {
     try {
-      await Promise.all([
+      const results = await Promise.all([
         supabaseClient.rpc('update_clinic_state_field', { p_path: ['state', 'female', docName], p_value: state.female[docName] || [] }),
         supabaseClient.rpc('update_clinic_state_field', { p_path: ['state', 'male', docName], p_value: state.male[docName] || [] }),
         supabaseClient.rpc('update_clinic_state_field', { p_path: ['state', 'secondFloor', docName], p_value: state.secondFloor[docName] || [] })
       ]);
+      const hasError = results.some(res => res.error);
+      if (hasError) {
+        console.error(`Error saving state for doctor ${docName} to Supabase. falling back to full saveState().`, results);
+        saveState();
+      }
     } catch (e) {
       console.error(`Exception saving state for doctor ${docName}:`, e);
+      saveState();
     }
   }
 }
