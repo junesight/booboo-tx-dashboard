@@ -2047,3 +2047,98 @@ body[data-active-tab="floor2"] #panel-floor2 {
     gap: 0.4rem !important;
   }
 }
+
+/* ==========================================
+   Toggle Header Collapse Button & States
+   ========================================== */
+
+/* Toggle button default style (in expanded header) */
+.btn-toggle-header {
+  grid-column: 3;
+  grid-row: 2;
+  width: 40px;
+  box-sizing: border-box;
+  justify-content: center;
+  align-items: center;
+  padding: 0.45rem 0;
+  border-radius: 8px;
+  font-family: var(--font-family);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  background: rgba(75, 85, 99, 0.06);
+  color: #4b5563;
+  border: 1px solid rgba(75, 85, 99, 0.15);
+}
+
+.btn-toggle-header:hover {
+  background: #4b5563;
+  color: #ffffff;
+  border-color: #4b5563;
+  box-shadow: 0 4px 10px rgba(75, 85, 99, 0.15);
+}
+
+/* Expand grid columns to accommodate toggle button on tablet/desktop */
+@media (min-width: 769px) {
+  .header-actions {
+    grid-template-columns: 140px 140px 40px !important;
+  }
+}
+
+/* Collapsed Header state styles - lightweight and high specificity overrides */
+body.header-collapsed .app-header {
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  margin-bottom: 0.35rem !important;
+  padding: 0.4rem 2rem !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  min-height: auto !important;
+  gap: 0 !important;
+}
+
+body.header-collapsed .header-logo,
+body.header-collapsed .tabs-container,
+body.header-collapsed #connection-status,
+body.header-collapsed #btn-fullscreen,
+body.header-collapsed #btn-sync-schedule,
+body.header-collapsed #btn-reset-all {
+  display: none !important;
+}
+
+body.header-collapsed .header-status {
+  width: auto !important;
+  align-items: flex-end !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+body.header-collapsed .header-actions {
+  display: grid !important;
+  grid-template-columns: 40px !important;
+  grid-template-rows: auto !important;
+  column-gap: 0 !important;
+  row-gap: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: auto !important;
+  justify-items: end !important;
+}
+
+body.header-collapsed .btn-toggle-header {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  margin: 0 !important;
+}
+
+/* Mobile view collapsed header alignment */
+@media (max-width: 768px) {
+  body.header-collapsed .app-header {
+    justify-content: center !important;
+    padding: 0.4rem 1rem !important;
+  }
+}

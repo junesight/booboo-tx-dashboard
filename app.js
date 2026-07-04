@@ -1415,6 +1415,24 @@ function isArrowItem(val) {
     });
   }
 
+  // Toggle Header Collapse
+  const btnToggleHeader = document.getElementById('btn-toggle-header');
+  const isHeaderCollapsed = localStorage.getItem('clinic_header_collapsed') === 'true';
+  if (isHeaderCollapsed) {
+    document.body.classList.add('header-collapsed');
+    if (btnToggleHeader) {
+      btnToggleHeader.textContent = '▼';
+    }
+  }
+
+  if (btnToggleHeader) {
+    btnToggleHeader.addEventListener('click', () => {
+      const collapsed = document.body.classList.toggle('header-collapsed');
+      btnToggleHeader.textContent = collapsed ? '▼' : '▲';
+      localStorage.setItem('clinic_header_collapsed', collapsed ? 'true' : 'false');
+    });
+  }
+
   // Reset All Button
   const btnResetAll = document.getElementById('btn-reset-all');
   if (btnResetAll) {
