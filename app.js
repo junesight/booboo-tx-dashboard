@@ -87,6 +87,9 @@ let activeSlot = {
   index: null      // 0 ~ 7
 };
 
+// Track if bloodletting (사혈) mode is active in the modal
+let isBloodlettingMode = false;
+
 // Track currently active row for doctor edit
 let activeDirectorName = null;
 
@@ -734,7 +737,7 @@ function updateUI() {
 // Update individual slot element
 function updateSlotDisplay(slotEl, val, index) {
   // Reset all classes related to value rendering
-  slotEl.classList.remove('occupied', 'opt-ultrasound', 'opt-consultation', 'opt-chuna', 'opt-diet', 'opt-divider', 'opt-arrow', 'opt-meal', 'opt-placenta', 'in-progress');
+  slotEl.classList.remove('occupied', 'opt-ultrasound', 'opt-consultation', 'opt-chuna', 'opt-diet', 'opt-divider', 'opt-arrow', 'opt-meal', 'opt-placenta', 'opt-bloodletting', 'in-progress');
   
   if (val !== null) {
     let isProgress = false;
@@ -742,6 +745,17 @@ function updateSlotDisplay(slotEl, val, index) {
     if (typeof val === 'string' && val.endsWith('_progress')) {
       isProgress = true;
       cleanVal = val.substring(0, val.length - 9);
+    }
+
+    let isBloodletting = false;
+    if (typeof cleanVal === 'string' && cleanVal.startsWith('사혈_')) {
+      isBloodletting = true;
+      cleanVal = cleanVal.substring(3); // Remove '사혈_' prefix
+      const parsed = parseInt(cleanVal, 10);
+      if (!isNaN(parsed) && String(parsed) === cleanVal) {
+        cleanVal = parsed;
+      }
+    } else {
       const parsed = parseInt(cleanVal, 10);
       if (!isNaN(parsed) && String(parsed) === cleanVal) {
         cleanVal = parsed;
@@ -749,6 +763,9 @@ function updateSlotDisplay(slotEl, val, index) {
     }
 
     slotEl.classList.add('occupied');
+    if (isBloodletting) {
+      slotEl.classList.add('opt-bloodletting');
+    }
     
     // Only show visual in-progress blinking/pulse if index is 0 (the leftmost slot)
     const showProgressVisuals = isProgress && (index === 0);
@@ -1470,14 +1487,23 @@ function openModal(ward, docName, index) {
   });
   
   // Generate bed number buttons
-  modalBedGrid.innerHTML = '';
   const currentVal = state[ward][docName][index];
   let cleanCurrentVal = currentVal;
-  if (currentVal !== null && currentVal !== undefined && typeof currentVal === 'string' && currentVal.endsWith('_progress')) {
-    cleanCurrentVal = currentVal.substring(0, currentVal.length - 9);
-    const parsed = parseInt(cleanCurrentVal, 10);
-    if (!isNaN(parsed) && String(parsed) === cleanCurrentVal) {
-      cleanCurrentVal = parsed;
+  isBloodlettingMode = false;
+
+  if (currentVal !== null && currentVal !== undefined) {
+    let checkVal = currentVal;
+    if (typeof checkVal === 'string' && checkVal.endsWith('_progress')) {
+      checkVal = checkVal.substring(0, checkVal.length - 9);
+    }
+    if (typeof checkVal === 'string' && checkVal.startsWith('사혈_')) {
+      isBloodlettingMode = true;
+      const bedPart = checkVal.substring(3); // Remove '사혈_' prefix
+      const parsed = parseInt(bedPart, 10);
+      cleanCurrentVal = !isNaN(parsed) && String(parsed) === bedPart ? parsed : bedPart;
+    } else {
+      const parsed = parseInt(checkVal, 10);
+      cleanCurrentVal = !isNaN(parsed) && String(parsed) === checkVal ? parsed : checkVal;
     }
   }
   
@@ -1491,25 +1517,38 @@ function openModal(ward, docName, index) {
     maxBed = 38;
   }
 
-  for (let i = minBed; i <= maxBed; i++) {
-    const btn = document.createElement('button');
-    btn.className = 'bed-btn';
-    if (cleanCurrentVal === i) {
-      btn.classList.add('active');
+  function renderModalBeds() {
+    modalBedGrid.innerHTML = '';
+    for (let i = minBed; i <= maxBed; i++) {
+      const btn = document.createElement('button');
+      btn.className = 'bed-btn';
+      if (cleanCurrentVal === i) {
+        btn.classList.add('active');
+      }
+      btn.textContent = i;
+      
+      if (isBloodlettingMode) {
+        btn.classList.remove('disabled');
+        btn.style.opacity = '1';
+        btn.style.pointerEvents = 'auto';
+        btn.style.cursor = 'pointer';
+        btn.addEventListener('click', () => selectBedNumber(i));
+      } else {
+        if (assignedNumbers.has(i)) {
+          btn.classList.add('disabled');
+          btn.style.opacity = '0.35';
+          btn.style.pointerEvents = 'none';
+          btn.style.cursor = 'not-allowed';
+        } else {
+          btn.addEventListener('click', () => selectBedNumber(i));
+        }
+      }
+      modalBedGrid.appendChild(btn);
     }
-    btn.textContent = i;
-    
-    // Dim if already assigned in this ward to prevent duplicates
-    if (assignedNumbers.has(i)) {
-      btn.classList.add('disabled');
-      btn.style.opacity = '0.35';
-      btn.style.pointerEvents = 'none';
-      btn.style.cursor = 'not-allowed';
-    } else {
-      btn.addEventListener('click', () => selectBedNumber(i));
-    }
-    modalBedGrid.appendChild(btn);
   }
+
+  // Initial render of bed buttons
+  renderModalBeds();
 
   // Generate special options buttons
   modalSpecialGrid.innerHTML = '';
@@ -1518,17 +1557,49 @@ function openModal(ward, docName, index) {
     { name: '추나', class: 'btn-chuna' },
     { name: '초음파', class: 'btn-ultrasound' },
     { name: '자하거/디나', class: 'btn-placenta', displayName: '자하거<br>디나' },
-    { name: '린다이어트', class: 'btn-diet' }
+    { name: '린다이어트', class: 'btn-diet' },
+    { name: '사혈', class: 'btn-bloodletting' }
   ];
 
   specialOptions.forEach(opt => {
     const btn = document.createElement('button');
     btn.className = `special-btn ${opt.class}`;
-    if (cleanCurrentVal === opt.name) {
-      btn.classList.add('active');
+    
+    if (opt.name === '사혈') {
+      if (isBloodlettingMode) {
+        btn.classList.add('active');
+      }
+    } else {
+      if (!isBloodlettingMode && cleanCurrentVal === opt.name) {
+        btn.classList.add('active');
+      }
     }
+    
     btn.innerHTML = opt.displayName ? opt.displayName : opt.name;
-    btn.addEventListener('click', () => selectBedNumber(opt.name));
+    
+    if (opt.name === '사혈') {
+      btn.addEventListener('click', () => {
+        isBloodlettingMode = !isBloodlettingMode;
+        if (isBloodlettingMode) {
+          btn.classList.add('active');
+          // Clear active styling from other special buttons
+          modalSpecialGrid.querySelectorAll('.special-btn').forEach(el => {
+            if (el !== btn) el.classList.remove('active');
+          });
+        } else {
+          btn.classList.remove('active');
+          if (typeof currentVal === 'string' && currentVal.startsWith('사혈_')) {
+            cleanCurrentVal = null;
+          }
+        }
+        renderModalBeds();
+      });
+    } else {
+      btn.addEventListener('click', () => {
+        isBloodlettingMode = false;
+        selectBedNumber(opt.name);
+      });
+    }
     modalSpecialGrid.appendChild(btn);
   });
 
@@ -1599,21 +1670,23 @@ function openModal(ward, docName, index) {
 // Close Modal
 function closeModal() {
   modalOverlay.classList.remove('active');
+  isBloodlettingMode = false;
 }
 
 // Select Bed Number (Left-aligned FIFO insertion)
 function selectBedNumber(num) {
   const { ward, docName, index } = activeSlot;
   if (ward && docName && index !== null) {
+    const saveValue = isBloodlettingMode ? `사혈_${num}` : num;
     const currentVal = state[ward][docName][index];
     if (currentVal === null || currentVal === undefined) {
       // Adding a new patient: append to the active list
       const activeList = state[ward][docName].filter(val => val !== null);
-      activeList.push(num);
+      activeList.push(saveValue);
       state[ward][docName] = activeList;
     } else {
       // Editing an existing patient at the clicked index
-      state[ward][docName][index] = num;
+      state[ward][docName][index] = saveValue;
     }
     compactRowState(ward, docName);
     saveStateField(['state', ward, docName], state[ward][docName]);

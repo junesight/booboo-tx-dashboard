@@ -1041,6 +1041,15 @@ body[data-active-tab="floor2"] #panel-floor2 {
   color: #ffffff;
 }
 
+/* 사혈 - 핑크색 테두리 및 핑크색 번호 #ec4899 */
+.slot.opt-bloodletting {
+  border-color: rgba(236, 72, 153, 0.3) !important;
+}
+.slot.opt-bloodletting .slot-magnet {
+  border-color: #ec4899 !important;
+  color: #ec4899 !important;
+}
+
 /* 자하거/디나 - 초록색 #10b981 */
 .slot.opt-placenta { 
   border-color: rgba(16, 185, 129, 0.3) !important; 
