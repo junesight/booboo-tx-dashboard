@@ -946,6 +946,47 @@ function confirmCancelProgress() {
   }
 }
 
+// Show custom general confirmation modal
+function showConfirmModal(title, text, confirmCallback) {
+  const modal = document.getElementById('custom-confirm-modal');
+  const titleEl = document.getElementById('confirm-modal-title');
+  const instructionEl = document.getElementById('confirm-modal-instruction');
+  const btnYes = document.getElementById('btn-confirm-modal-yes');
+  const btnNo = document.getElementById('btn-confirm-modal-no');
+  
+  if (!modal || !titleEl || !instructionEl || !btnYes || !btnNo) return;
+  
+  titleEl.textContent = title;
+  instructionEl.textContent = text;
+  
+  // Clone nodes to discard older event listeners
+  const newBtnYes = btnYes.cloneNode(true);
+  btnYes.parentNode.replaceChild(newBtnYes, btnYes);
+  
+  const newBtnNo = btnNo.cloneNode(true);
+  btnNo.parentNode.replaceChild(newBtnNo, btnNo);
+  
+  newBtnYes.addEventListener('click', () => {
+    modal.classList.remove('active');
+    if (confirmCallback) confirmCallback();
+  });
+  
+  const closeConfirmModal = () => {
+    modal.classList.remove('active');
+  };
+  
+  newBtnNo.addEventListener('click', closeConfirmModal);
+  
+  // Close when overlay clicked
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      closeConfirmModal();
+    }
+  });
+  
+  modal.classList.add('active');
+}
+
 // Setup Event Listeners
 function setupEventListeners() {
   const boardWrapper = document.querySelector('.board-wrapper');
@@ -1437,9 +1478,13 @@ function isArrowItem(val) {
   const btnResetAll = document.getElementById('btn-reset-all');
   if (btnResetAll) {
     btnResetAll.addEventListener('click', () => {
-      if (confirm('모든 베드 배치를 초기화(비우기)하시겠습니까?')) {
-        resetAllSlots();
-      }
+      showConfirmModal(
+        '🧹 전체 초기화',
+        '모든 베드 배치를 초기화(비우기)하시겠습니까?',
+        () => {
+          resetAllSlots();
+        }
+      );
     });
   }
 
@@ -1447,9 +1492,13 @@ function isArrowItem(val) {
   const btnSyncSchedule = document.getElementById('btn-sync-schedule');
   if (btnSyncSchedule) {
     btnSyncSchedule.addEventListener('click', () => {
-      if (confirm('오늘의 의료진 근무 및 퇴근 시간을 Supabase에서 자동으로 동기화하시겠습니까?')) {
-        syncScheduleFromSupabase();
-      }
+      showConfirmModal(
+        '📅 일정 동기화',
+        '오늘의 의료진 근무 및 퇴근 시간을 Supabase에서 자동으로 동기화하시겠습니까?',
+        () => {
+          syncScheduleFromSupabase();
+        }
+      );
     });
   }
   

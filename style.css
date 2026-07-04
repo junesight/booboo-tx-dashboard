@@ -1496,13 +1496,15 @@ body[data-active-tab="floor2"] #panel-floor2 {
   transform: translateY(-1px);
 }
 
-#cancel-progress-modal .modal-footer {
+#cancel-progress-modal .modal-footer,
+#custom-confirm-modal .modal-footer {
   flex-direction: row;
   justify-content: flex-end;
   gap: 0.6rem;
 }
 
-#cancel-progress-modal .modal-footer .btn {
+#cancel-progress-modal .modal-footer .btn,
+#custom-confirm-modal .modal-footer .btn {
   width: auto;
   padding: 0.8rem 1.5rem;
 }
