@@ -973,13 +973,13 @@ body[data-active-tab="floor2"] #panel-floor2 {
 
 /* In-Progress (진행중) Magnet State & Animations */
 .slot-magnet.in-progress {
-  animation: progressPulse 2.2s infinite ease-in-out;
+  animation: progressPulse 1.4s infinite ease-in-out;
   position: relative;
 }
 
 .slot-magnet:not(.text-magnet).in-progress {
-  border-color: #2563eb !important;
-  color: #2563eb !important;
+  border-color: #ef4444 !important;
+  color: #ef4444 !important;
 }
 
 /* Neon Green Blink LED dot at top right of the magnet */
@@ -1004,16 +1004,16 @@ body[data-active-tab="floor2"] #panel-floor2 {
 
 @keyframes progressPulse {
   0% {
-    box-shadow: 0 0 0 0px rgba(37, 99, 235, 0.45), 0 4px 8px rgba(0, 0, 0, 0.12);
-    transform: scale(0.96);
+    box-shadow: 0 0 0 0px rgba(239, 68, 68, 0.6), 0 4px 8px rgba(0, 0, 0, 0.12);
+    transform: scale(0.95);
   }
   50% {
-    box-shadow: 0 0 0 12px rgba(37, 99, 235, 0), 0 4px 18px rgba(37, 99, 235, 0.35);
-    transform: scale(1.02);
+    box-shadow: 0 0 0 15px rgba(239, 68, 68, 0), 0 4px 18px rgba(239, 68, 68, 0.35);
+    transform: scale(1.05);
   }
   100% {
-    box-shadow: 0 0 0 0px rgba(37, 99, 235, 0), 0 4px 8px rgba(0, 0, 0, 0.12);
-    transform: scale(0.96);
+    box-shadow: 0 0 0 0px rgba(239, 68, 68, 0), 0 4px 8px rgba(0, 0, 0, 0.12);
+    transform: scale(0.95);
   }
 }
 
