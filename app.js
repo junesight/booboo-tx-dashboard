@@ -793,10 +793,6 @@ function updateSlotDisplay(slotEl, val, index) {
       slotEl.classList.add('opt-herbal-consult');
       magnetClass += ' text-magnet';
       displayVal = '한약<br>상담';
-    } else if (cleanVal === '첩약상담') {
-      slotEl.classList.add('opt-packet-consult');
-      magnetClass += ' text-magnet';
-      displayVal = '첩약<br>상담';
     } else if (cleanVal === '추나') {
       slotEl.classList.add('opt-chuna');
       magnetClass += ' text-magnet';
@@ -1565,8 +1561,7 @@ function openModal(ward, docName, index) {
   const consultOptions = [
     { name: '상담', class: 'btn-consultation' },
     { name: '린다이어트', class: 'btn-diet' },
-    { name: '한약상담', class: 'btn-herbal-consult' },
-    { name: '첩약상담', class: 'btn-packet-consult' }
+    { name: '한약상담', class: 'btn-herbal-consult' }
   ];
 
   consultOptions.forEach(opt => {
