@@ -1045,10 +1045,13 @@ body[data-active-tab="floor2"] #panel-floor2 {
 .slot.opt-bloodletting {
   border-color: rgba(236, 72, 153, 0.3) !important;
 }
-.slot.opt-bloodletting .slot-magnet:not(.in-progress) {
+.slot.opt-bloodletting .slot-magnet {
   background: #ec4899 !important;
   color: #ffffff !important;
   border-color: #ec4899 !important;
+}
+.slot.opt-bloodletting .slot-magnet.in-progress {
+  border-color: #ef4444 !important; /* Red border when in-progress */
 }
 
 /* 한약상담 - 진한 갈색 #4a2711 */
