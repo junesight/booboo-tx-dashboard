@@ -134,7 +134,8 @@ let isLongPress = false;
 // DOM Elements
 const modalOverlay = document.getElementById('bed-modal');
 const modalBedGrid = document.getElementById('modal-bed-grid');
-const modalSpecialGrid = document.getElementById('modal-special-grid');
+const modalConsultGrid = document.getElementById('modal-consult-grid');
+const modalTreatmentGrid = document.getElementById('modal-treatment-grid');
 const modalEtcGrid = document.getElementById('modal-etc-grid');
 const btnClearSlot = document.getElementById('btn-clear-slot');
 const btnCancelModal = document.getElementById('btn-cancel-modal');
@@ -1558,20 +1559,39 @@ function openModal(ward, docName, index) {
   // Initial render of bed buttons
   renderModalBeds();
 
-  // Generate special options buttons
-  modalSpecialGrid.innerHTML = '';
-  const specialOptions = [
+  // Generate consult options buttons
+  modalConsultGrid.innerHTML = '';
+  const consultOptions = [
     { name: '상담', class: 'btn-consultation' },
-    { name: '한약상담', class: 'btn-herbal-consult' },
-    { name: '첩약상담', class: 'btn-packet-consult' },
     { name: '린다이어트', class: 'btn-diet' },
-    { name: '사혈', class: 'btn-bloodletting' },
-    { name: '추나', class: 'btn-chuna' },
-    { name: '초음파', class: 'btn-ultrasound' },
-    { name: '자하거/디나', class: 'btn-placenta', displayName: '자하거<br>디나' }
+    { name: '한약상담', class: 'btn-herbal-consult' },
+    { name: '첩약상담', class: 'btn-packet-consult' }
   ];
 
-  specialOptions.forEach(opt => {
+  consultOptions.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = `special-btn ${opt.class}`;
+    if (!isBloodlettingMode && cleanCurrentVal === opt.name) {
+      btn.classList.add('active');
+    }
+    btn.innerHTML = opt.displayName ? opt.displayName : opt.name;
+    btn.addEventListener('click', () => {
+      isBloodlettingMode = false;
+      selectBedNumber(opt.name);
+    });
+    modalConsultGrid.appendChild(btn);
+  });
+
+  // Generate treatment options buttons
+  modalTreatmentGrid.innerHTML = '';
+  const treatmentOptions = [
+    { name: '추나', class: 'btn-chuna' },
+    { name: '초음파', class: 'btn-ultrasound' },
+    { name: '자하거/디나', class: 'btn-placenta', displayName: '자하거<br>디나' },
+    { name: '사혈', class: 'btn-bloodletting' }
+  ];
+
+  treatmentOptions.forEach(opt => {
     const btn = document.createElement('button');
     btn.className = `special-btn ${opt.class}`;
     
@@ -1592,8 +1612,9 @@ function openModal(ward, docName, index) {
         isBloodlettingMode = !isBloodlettingMode;
         if (isBloodlettingMode) {
           btn.classList.add('active');
-          // Clear active styling from other special buttons
-          modalSpecialGrid.querySelectorAll('.special-btn').forEach(el => {
+          // Clear active styling from other buttons in both grids
+          modalConsultGrid.querySelectorAll('.special-btn').forEach(el => el.classList.remove('active'));
+          modalTreatmentGrid.querySelectorAll('.special-btn').forEach(el => {
             if (el !== btn) el.classList.remove('active');
           });
         } else {
@@ -1610,7 +1631,7 @@ function openModal(ward, docName, index) {
         selectBedNumber(opt.name);
       });
     }
-    modalSpecialGrid.appendChild(btn);
+    modalTreatmentGrid.appendChild(btn);
   });
 
   // Generate etc options buttons
