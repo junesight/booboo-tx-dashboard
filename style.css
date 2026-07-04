@@ -1829,22 +1829,27 @@ body[data-active-tab="floor2"] #panel-floor2 {
     padding-bottom: 0.8rem;
   }
   body[data-active-tab="all"] .board-panel {
-    padding: 1.2rem 1.5rem;
-    margin-bottom: 1.2rem;
+    padding: 0.6rem 1.2rem !important;
+    margin-bottom: 0.6rem !important;
   }
   body[data-active-tab="all"] .board-grid {
     row-gap: 0.4rem !important;
   }
   body[data-active-tab="all"] .board-grid > * {
-    padding-top: 0.6rem;
-    padding-bottom: 0.6rem;
+    padding-top: 0.25rem !important;
+    padding-bottom: 0.25rem !important;
   }
   body[data-active-tab="all"] .grid-header {
-    padding-bottom: 0.8rem !important;
+    padding-top: 0.2rem !important;
+    padding-bottom: 0.3rem !important;
+    margin-bottom: 0.3rem !important;
+  }
+  body[data-active-tab="all"] .grid-header h2 {
+    font-size: 1.05rem !important;
   }
   body[data-active-tab="all"] .slots-container {
-    padding: 0.35rem 0.4rem !important;
-    gap: 0.35rem !important;
+    padding: 0.3rem 0.35rem !important;
+    gap: 0.3rem !important;
   }
   body[data-active-tab="all"] .director-left-cell {
     flex-direction: column !important;
