@@ -501,6 +501,7 @@ function applyDoctorClass(element, cell, docName) {
 // Update the full interface based on state
 function updateUI() {
   const activeTab = document.body.getAttribute('data-active-tab') || 'all';
+  const defaultLeaveText = isWeekendOrHoliday(new Date()) ? '2시' : '퇴근시간';
   
   // 💡 1층 정렬 기준: 오늘 휴진(offDuty)이거나 퇴근(leaveTime === '퇴근')인 원장을 맨 뒤(아래)로 밀되, 나머지는 현재 rowDirectorsFloor1 순서 유지
   const sortDirectors1 = (a, b) => {
@@ -575,7 +576,7 @@ function updateUI() {
       
       if (leaveBtn) {
         const val = leaveTimes[docName];
-        leaveBtn.textContent = val ? val : '퇴근시간';
+        leaveBtn.textContent = val ? val : defaultLeaveText;
         leaveBtn.classList.remove('active', 'off-duty');
         if (isOff) {
           leaveBtn.classList.add('off-duty');
@@ -610,7 +611,7 @@ function updateUI() {
     
     if (leaveBtn) {
       const val = leaveTimes[docName];
-      leaveBtn.textContent = val ? val : '퇴근시간';
+      leaveBtn.textContent = val ? val : defaultLeaveText;
       leaveBtn.classList.remove('active', 'off-duty');
       if (isOff) {
         leaveBtn.classList.add('off-duty');
@@ -1755,6 +1756,46 @@ function resetAllSlots() {
   });
   saveStateField(['state'], state);
   updateUI();
+}
+
+// Check if a date is a weekend or public holiday in Korea (supports 2026/2027)
+function isWeekendOrHoliday(dateObj) {
+  const day = dateObj.getDay();
+  if (day === 0 || day === 6) {
+    return true;
+  }
+  
+  const year = dateObj.getFullYear();
+  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const date = String(dateObj.getDate()).padStart(2, '0');
+  const md = `${month}-${date}`;
+  
+  const fixedHolidays = [
+    '01-01', '03-01', '05-05', '06-06', '08-15', '10-03', '10-09', '12-25'
+  ];
+  if (fixedHolidays.includes(md)) {
+    return true;
+  }
+  
+  if (year === 2026) {
+    const holidays2026 = [
+      '02-16', '02-17', '02-18', '03-02', '05-25', '08-17', '09-24', '09-25', '09-26', '09-28', '10-05'
+    ];
+    if (holidays2026.includes(md)) {
+      return true;
+    }
+  }
+  
+  if (year === 2027) {
+    const holidays2027 = [
+      '02-06', '02-07', '02-08', '02-09', '05-13', '05-14', '08-16', '10-04', '10-14', '10-15', '10-16'
+    ];
+    if (holidays2027.includes(md)) {
+      return true;
+    }
+  }
+  
+  return false;
 }
 
 // Start Clock
