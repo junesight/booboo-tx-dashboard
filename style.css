@@ -1050,6 +1050,36 @@ body[data-active-tab="floor2"] #panel-floor2 {
   color: #ec4899 !important;
 }
 
+/* 한약상담 - 진한 갈색 #4a2711 */
+.slot.opt-herbal-consult { 
+  border-color: rgba(74, 39, 17, 0.3) !important; 
+}
+.slot.opt-herbal-consult .slot-magnet {
+  background: #4a2711;
+  color: #ffffff;
+  line-height: 1.1 !important;
+  font-size: 0.85rem !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 첩약상담 - 연한 갈색 #96603a */
+.slot.opt-packet-consult { 
+  border-color: rgba(150, 96, 58, 0.3) !important; 
+}
+.slot.opt-packet-consult .slot-magnet {
+  background: #96603a;
+  color: #ffffff;
+  line-height: 1.1 !important;
+  font-size: 0.85rem !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
 /* 자하거/디나 - 초록색 #10b981 */
 .slot.opt-placenta { 
   border-color: rgba(16, 185, 129, 0.3) !important; 
@@ -1162,7 +1192,9 @@ body[data-active-tab="floor2"] #panel-floor2 {
   .slot-magnet.text-magnet {
     font-size: 0.8rem !important;
   }
-  .slot.opt-placenta .slot-magnet {
+  .slot.opt-placenta .slot-magnet,
+  .slot.opt-herbal-consult .slot-magnet,
+  .slot.opt-packet-consult .slot-magnet {
     font-size: 0.72rem !important;
     line-height: 1.05 !important;
   }
@@ -1172,7 +1204,9 @@ body[data-active-tab="floor2"] #panel-floor2 {
   .slot-magnet.text-magnet {
     font-size: 0.68rem !important;
   }
-  .slot.opt-placenta .slot-magnet {
+  .slot.opt-placenta .slot-magnet,
+  .slot.opt-herbal-consult .slot-magnet,
+  .slot.opt-packet-consult .slot-magnet {
     font-size: 0.6rem !important;
     line-height: 1.0 !important;
   }
@@ -1364,6 +1398,18 @@ body[data-active-tab="floor2"] #panel-floor2 {
   background: #ef4444;
   color: white;
   border-color: #ef4444;
+}
+
+.special-btn.btn-herbal-consult:hover, .special-btn.btn-herbal-consult.active {
+  background: #4a2711;
+  color: white;
+  border-color: #4a2711;
+}
+
+.special-btn.btn-packet-consult:hover, .special-btn.btn-packet-consult.active {
+  background: #96603a;
+  color: white;
+  border-color: #96603a;
 }
 
 .special-btn.btn-chuna:hover, .special-btn.btn-chuna.active {

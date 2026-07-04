@@ -737,7 +737,7 @@ function updateUI() {
 // Update individual slot element
 function updateSlotDisplay(slotEl, val, index) {
   // Reset all classes related to value rendering
-  slotEl.classList.remove('occupied', 'opt-ultrasound', 'opt-consultation', 'opt-chuna', 'opt-diet', 'opt-divider', 'opt-arrow', 'opt-meal', 'opt-placenta', 'opt-bloodletting', 'in-progress');
+  slotEl.classList.remove('occupied', 'opt-ultrasound', 'opt-consultation', 'opt-chuna', 'opt-diet', 'opt-divider', 'opt-arrow', 'opt-meal', 'opt-placenta', 'opt-bloodletting', 'opt-herbal-consult', 'opt-packet-consult', 'in-progress');
   
   if (val !== null) {
     let isProgress = false;
@@ -787,6 +787,14 @@ function updateSlotDisplay(slotEl, val, index) {
     } else if (cleanVal === '상담') {
       slotEl.classList.add('opt-consultation');
       magnetClass += ' text-magnet';
+    } else if (cleanVal === '한약상담') {
+      slotEl.classList.add('opt-herbal-consult');
+      magnetClass += ' text-magnet';
+      displayVal = '한약<br>상담';
+    } else if (cleanVal === '첩약상담') {
+      slotEl.classList.add('opt-packet-consult');
+      magnetClass += ' text-magnet';
+      displayVal = '첩약<br>상담';
     } else if (cleanVal === '추나') {
       slotEl.classList.add('opt-chuna');
       magnetClass += ' text-magnet';
@@ -1554,11 +1562,13 @@ function openModal(ward, docName, index) {
   modalSpecialGrid.innerHTML = '';
   const specialOptions = [
     { name: '상담', class: 'btn-consultation' },
+    { name: '한약상담', class: 'btn-herbal-consult' },
+    { name: '첩약상담', class: 'btn-packet-consult' },
+    { name: '린다이어트', class: 'btn-diet' },
+    { name: '사혈', class: 'btn-bloodletting' },
     { name: '추나', class: 'btn-chuna' },
     { name: '초음파', class: 'btn-ultrasound' },
-    { name: '자하거/디나', class: 'btn-placenta', displayName: '자하거<br>디나' },
-    { name: '린다이어트', class: 'btn-diet' },
-    { name: '사혈', class: 'btn-bloodletting' }
+    { name: '자하거/디나', class: 'btn-placenta', displayName: '자하거<br>디나' }
   ];
 
   specialOptions.forEach(opt => {
