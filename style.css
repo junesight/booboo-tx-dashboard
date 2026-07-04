@@ -58,6 +58,7 @@ body {
   display: flex;
   flex-direction: column;
   flex-grow: 1;
+  position: relative;
 }
 
 /* Header */
@@ -2089,16 +2090,15 @@ body[data-active-tab="floor2"] #panel-floor2 {
 
 /* Collapsed Header state styles - lightweight and high specificity overrides */
 body.header-collapsed .app-header {
-  flex-direction: row !important;
-  align-items: center !important;
-  justify-content: flex-end !important;
-  margin-bottom: 0.35rem !important;
-  padding: 0.4rem 2rem !important;
+  display: block !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
   border-bottom: none !important;
   box-shadow: none !important;
   background: transparent !important;
-  min-height: auto !important;
-  gap: 0 !important;
+  overflow: visible !important;
 }
 
 body.header-collapsed .header-logo,
@@ -2118,27 +2118,35 @@ body.header-collapsed .header-status {
 }
 
 body.header-collapsed .header-actions {
-  display: grid !important;
-  grid-template-columns: 40px !important;
-  grid-template-rows: auto !important;
-  column-gap: 0 !important;
-  row-gap: 0 !important;
+  display: block !important;
   margin: 0 !important;
   padding: 0 !important;
   width: auto !important;
-  justify-items: end !important;
 }
 
+/* Floating toggle button absolute positioning relative to .app-container */
 body.header-collapsed .btn-toggle-header {
-  grid-column: 1 !important;
-  grid-row: 1 !important;
-  margin: 0 !important;
+  position: absolute !important;
+  top: 2.6rem !important; /* Aligns with Male Ward / 2nd Floor header row center on desktop */
+  right: 2rem !important; /* Aligns exactly with the right edge of the board outer container (original horizontal position) */
+  z-index: 1000 !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(75, 85, 99, 0.25) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
 }
 
-/* Mobile view collapsed header alignment */
+/* Position adjustments for Tablet Viewport */
+@media (min-width: 769px) and (max-width: 1024px) {
+  body.header-collapsed .btn-toggle-header {
+    top: 1.8rem !important;
+    right: 1rem !important;
+  }
+}
+
+/* Position adjustments for Mobile Viewport */
 @media (max-width: 768px) {
-  body.header-collapsed .app-header {
-    justify-content: center !important;
-    padding: 0.4rem 1rem !important;
+  body.header-collapsed .btn-toggle-header {
+    top: 1.6rem !important;
+    right: 1rem !important;
   }
 }
