@@ -1065,12 +1065,12 @@ body[data-active-tab="floor2"] #panel-floor2 {
   align-items: center;
 }
 
-/* 첩약상담 - 연한 갈색 #96603a */
+/* 첩약상담 - 연한 갈색 #d49f6a */
 .slot.opt-packet-consult { 
-  border-color: rgba(150, 96, 58, 0.3) !important; 
+  border-color: rgba(212, 159, 106, 0.3) !important; 
 }
 .slot.opt-packet-consult .slot-magnet {
-  background: #96603a;
+  background: #d49f6a;
   color: #ffffff;
   line-height: 1.1 !important;
   font-size: 0.85rem !important;
@@ -1145,12 +1145,12 @@ body[data-active-tab="floor2"] #panel-floor2 {
   color: #ffffff;
 }
 
-/* 화살표 - 짙은 회색 배경 사각형 박스에 흰색 화살표 및 subtext */
+/* 화살표 - 밝은 회색 배경 사각형 박스에 흰색 화살표 및 subtext */
 .slot.opt-arrow { 
-  border-color: rgba(75, 85, 99, 0.3) !important; 
+  border-color: rgba(120, 136, 150, 0.3) !important; 
 }
 .slot.opt-arrow .slot-magnet {
-  background: #4b5563; /* Slate/Dark gray */
+  background: #788896; /* Slate silver-gray */
   color: #ffffff;
   font-size: 1.75rem !important;
   font-weight: 700;
@@ -1407,9 +1407,9 @@ body[data-active-tab="floor2"] #panel-floor2 {
 }
 
 .special-btn.btn-packet-consult:hover, .special-btn.btn-packet-consult.active {
-  background: #96603a;
+  background: #d49f6a;
   color: white;
-  border-color: #96603a;
+  border-color: #d49f6a;
 }
 
 .special-btn.btn-chuna:hover, .special-btn.btn-chuna.active {
@@ -1457,9 +1457,9 @@ body[data-active-tab="floor2"] #panel-floor2 {
 }
 
 .special-btn.btn-arrow:hover, .special-btn.btn-arrow.active {
-  background: #4b5563; /* Slate/Dark gray */
+  background: #788896; /* Slate silver-gray */
   color: white;
-  border-color: #4b5563;
+  border-color: #788896;
 }
 .modal-footer {
   display: flex;
