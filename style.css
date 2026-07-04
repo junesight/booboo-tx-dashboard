@@ -1163,10 +1163,10 @@ body[data-active-tab="floor2"] #panel-floor2 {
 }
 
 .arrow-subtext {
-  font-size: 0.68rem;
+  font-size: 0.85rem;
   font-weight: 700;
   display: block;
-  margin-top: 3px;
+  margin-top: 2px;
 }
 
 /* Text Magnet custom sizes (for '린다', '상담', '초음파', '추나') - Expanded to fill slot */
@@ -1900,7 +1900,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
     font-size: 1.15rem;
   }
   body[data-active-tab="all"] .arrow-subtext {
-    font-size: 0.62rem;
+    font-size: 0.78rem;
     margin-top: 0;
   }
   body[data-active-tab="all"] .slot.opt-arrow .slot-magnet {
