@@ -1378,6 +1378,12 @@ body[data-active-tab="floor2"] #panel-floor2 {
   border-color: #6340CD;
 }
 
+.special-btn.btn-bloodletting:hover, .special-btn.btn-bloodletting.active {
+  background: #ec4899;
+  color: white;
+  border-color: #ec4899;
+}
+
 .special-btn.btn-placenta:hover, .special-btn.btn-placenta.active {
   background: #10b981;
   color: white;
