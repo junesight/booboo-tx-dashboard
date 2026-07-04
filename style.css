@@ -1058,7 +1058,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
   background: #4a2711;
   color: #ffffff;
   line-height: 1.1 !important;
-  font-size: 0.85rem !important;
+  font-size: 1.05rem !important;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -1073,7 +1073,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
   background: #d49f6a;
   color: #ffffff;
   line-height: 1.1 !important;
-  font-size: 0.85rem !important;
+  font-size: 1.05rem !important;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -1088,7 +1088,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
   background: #10b981;
   color: #ffffff;
   line-height: 1.1 !important;
-  font-size: 0.85rem !important;
+  font-size: 1.05rem !important;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -1171,7 +1171,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
 
 /* Text Magnet custom sizes (for '린다', '상담', '초음파', '추나') - Expanded to fill slot */
 .slot-magnet.text-magnet {
-  font-size: 1.05rem;
+  font-size: 1.25rem;
   letter-spacing: -0.02em;
   font-weight: 700;
   border-radius: 12px; /* Perfect match for slot rounded corners */
@@ -1190,24 +1190,24 @@ body[data-active-tab="floor2"] #panel-floor2 {
 /* Container query to auto-scale text font size on narrow slots */
 @container (max-width: 55px) {
   .slot-magnet.text-magnet {
-    font-size: 0.8rem !important;
+    font-size: 0.95rem !important;
   }
   .slot.opt-placenta .slot-magnet,
   .slot.opt-herbal-consult .slot-magnet,
   .slot.opt-packet-consult .slot-magnet {
-    font-size: 0.72rem !important;
+    font-size: 0.85rem !important;
     line-height: 1.05 !important;
   }
 }
 
 @container (max-width: 45px) {
   .slot-magnet.text-magnet {
-    font-size: 0.68rem !important;
+    font-size: 0.82rem !important;
   }
   .slot.opt-placenta .slot-magnet,
   .slot.opt-herbal-consult .slot-magnet,
   .slot.opt-packet-consult .slot-magnet {
-    font-size: 0.6rem !important;
+    font-size: 0.72rem !important;
     line-height: 1.0 !important;
   }
 }
@@ -1897,7 +1897,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
     border-width: 4px;
   }
   body[data-active-tab="all"] .slot-magnet.text-magnet {
-    font-size: 0.95rem;
+    font-size: 1.15rem;
   }
   body[data-active-tab="all"] .arrow-subtext {
     font-size: 0.62rem;
