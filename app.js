@@ -460,7 +460,11 @@ async function saveStateForDoctor(docName) {
 function compactRowState(ward, docName) {
   if (!state[ward] || !state[ward][docName]) return;
   const occupied = state[ward][docName].filter(v => v !== null && v !== undefined && v !== '');
-  state[ward][docName] = [...occupied, ...Array(8 - occupied.length).fill(null)];
+  if (occupied.length >= 8) {
+    state[ward][docName] = occupied;
+  } else {
+    state[ward][docName] = [...occupied, ...Array(8 - occupied.length).fill(null)];
+  }
 }
 
 // Sanitize state by removing _progress suffix from slots at index >= 1
