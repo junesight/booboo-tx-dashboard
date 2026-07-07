@@ -2,6 +2,8 @@
 const supabaseUrl = 'https://wfyuxxskwlczoyisdcmy.supabase.co';
 const supabaseKey = 'sb_publishable_yUeE6ynEpbR3Eq-k3Gv1Ew_1DiaJHjz';
 const supabaseClient = window.supabase ? window.supabase.createClient(supabaseUrl, supabaseKey) : null;
+const SLACK_NOTIFY_DOCTOR = '김준현';
+const SLACK_NOTIFY_FUNCTION = 'notify-slack-treatment';
 
 // Connection Status Indicator Updater
 function updateConnectionStatus(status) {
@@ -852,9 +854,120 @@ function clearOtherWardsProgress(docName, activeWard) {
   });
 }
 
+// Helper to check if an item is a space transition arrow
+function isArrowItem(val) {
+  if (typeof val !== 'string') return false;
+  const arrows = ['▶', '◀', '▲', '▼', '▼여', '▼남', '➡️', '⬅️', '⬆️', '⬇️', '→', '←', '↑', '↓'];
+  return arrows.includes(val);
+}
+
+function cleanProgressValue(val) {
+  if (typeof val === 'string' && val.endsWith('_progress')) {
+    return val.substring(0, val.length - 9);
+  }
+  return val;
+}
+
+function getWardLabel(ward) {
+  if (ward === 'female') return '여자 치료실';
+  if (ward === 'male') return '남자 치료실';
+  if (ward === 'secondFloor') return '2층 치료실';
+  return ward;
+}
+
+function formatTreatmentLabel(val) {
+  const cleanVal = cleanProgressValue(val);
+  if (cleanVal === null || cleanVal === undefined || cleanVal === '') return null;
+  if (typeof cleanVal === 'string' && cleanVal.startsWith('사혈_')) {
+    return `${cleanVal.replace('사혈_', '')}번 사혈`;
+  }
+  const numericVal = parseInt(cleanVal, 10);
+  if (!isNaN(numericVal) && String(numericVal) === String(cleanVal)) {
+    return `${numericVal}번`;
+  }
+  return String(cleanVal).replace(/<br\s*\/?>/gi, '/');
+}
+
+function buildTreatmentNotificationPayload(docName, ward) {
+  if (docName !== SLACK_NOTIFY_DOCTOR) return null;
+  if (!state[ward] || !Array.isArray(state[ward][docName])) return null;
+
+  const row = state[ward][docName];
+  const currentRaw = row[0];
+  if (typeof currentRaw !== 'string' || !currentRaw.endsWith('_progress')) return null;
+
+  const currentValue = cleanProgressValue(currentRaw);
+  if (isArrowItem(currentValue)) return null;
+
+  const nextRaw = row.slice(1).find(val => {
+    const cleanVal = cleanProgressValue(val);
+    return cleanVal !== null && cleanVal !== undefined && cleanVal !== '' && !isArrowItem(cleanVal);
+  });
+
+  const currentLabel = formatTreatmentLabel(currentValue);
+  const nextLabel = formatTreatmentLabel(nextRaw);
+  if (!currentLabel) return null;
+
+  return {
+    doctorName: docName,
+    ward,
+    wardLabel: getWardLabel(ward),
+    currentTreatment: currentLabel,
+    nextTreatment: nextLabel,
+    eventKey: `${docName}|${ward}|${currentLabel}|${nextLabel || 'none'}|${JSON.stringify(row.slice(0, 4))}`
+  };
+}
+
+function getTreatmentNotificationStorage() {
+  try {
+    return JSON.parse(localStorage.getItem('clinic_last_slack_treatment_notification') || 'null');
+  } catch (e) {
+    console.warn('Could not read Slack notification duplicate state:', e);
+    return null;
+  }
+}
+
+function hasRecentTreatmentNotification(payload) {
+  const saved = getTreatmentNotificationStorage();
+  const duplicateWindowMs = 15000;
+  return Boolean(saved && saved.eventKey === payload.eventKey && Date.now() - saved.sentAt < duplicateWindowMs);
+}
+
+function markTreatmentNotificationSent(payload) {
+  const storageKey = 'clinic_last_slack_treatment_notification';
+  try {
+    localStorage.setItem(storageKey, JSON.stringify({
+      eventKey: payload.eventKey,
+      sentAt: Date.now()
+    }));
+  } catch (e) {
+    console.warn('Could not write Slack notification duplicate state:', e);
+  }
+}
+
+async function notifyTreatmentProgress(docName, ward) {
+  if (!supabaseClient) return;
+
+  const payload = buildTreatmentNotificationPayload(docName, ward);
+  if (!payload || hasRecentTreatmentNotification(payload)) return;
+
+  try {
+    const { error } = await supabaseClient.functions.invoke(SLACK_NOTIFY_FUNCTION, {
+      body: payload
+    });
+    if (error) {
+      console.error('Slack treatment notification failed:', error);
+      return;
+    }
+    markTreatmentNotificationSent(payload);
+  } catch (e) {
+    console.error('Slack treatment notification exception:', e);
+  }
+}
+
 // Handle cross-ward routing and standard queue shifts when an item is cleared from index 0
 function handleQueueShift(ward, docName, index, clearedValue) {
-  if (index !== 0 || !clearedValue) return;
+  if (index !== 0 || !clearedValue) return null;
   
   let cleanVal = clearedValue;
   if (typeof clearedValue === 'string' && clearedValue.endsWith('_progress')) {
@@ -884,7 +997,7 @@ function handleQueueShift(ward, docName, index, clearedValue) {
         console.log(`[Queue Routing] Routing in-progress from ${ward} to ${targetWard} for ${docName}. Setting item ${targetItem} to progress.`);
         state[targetWard][docName][0] = String(targetItem) + '_progress';
         clearOtherWardsProgress(docName, targetWard);
-        return; // Return early so we do NOT auto-start the next patient in the current ward!
+        return targetWard; // Return early so we do NOT auto-start the next patient in the current ward!
       }
     }
   }
@@ -896,8 +1009,11 @@ function handleQueueShift(ward, docName, index, clearedValue) {
       console.log(`[Queue Routing] Auto-transitioning next item ${nextItem} to progress in current ward ${ward}.`);
       state[ward][docName][0] = String(nextItem) + '_progress';
       clearOtherWardsProgress(docName, ward);
+      return ward;
     }
   }
+
+  return null;
 }
 
 // Triggered when a slot is long-pressed (reverts progress back to waiting)
@@ -1040,13 +1156,6 @@ function setupEventListeners() {
     });
   });
 
-// Helper to check if an item is a space transition arrow
-function isArrowItem(val) {
-  if (typeof val !== 'string') return false;
-  const arrows = ['▶', '◀', '▲', '▼', '▼여', '▼남', '➡️', '⬅️', '⬆️', '⬇️', '→', '←', '↑', '↓'];
-  return arrows.includes(val);
-}
-
   // Slot and Director tag clicking (using event delegation on main container)
   boardWrapper.addEventListener('click', (e) => {
     const slot = e.target.closest('.slot');
@@ -1070,20 +1179,23 @@ function isArrowItem(val) {
           if (isProgress) {
             console.log(`[Click Debug] Click on progress item at index 0. Immediate delete.`);
             const clearedVal = state[ward][docName][index];
+            let progressedWard = null;
             if (state[ward][docName][1] && isArrowItem(state[ward][docName][1])) {
               const arrowVal = state[ward][docName][1];
               state[ward][docName].splice(0, 2);
               compactRowState(ward, docName);
-              handleQueueShift(ward, docName, 0, arrowVal);
+              progressedWard = handleQueueShift(ward, docName, 0, arrowVal);
             } else {
               state[ward][docName].splice(index, 1);
               compactRowState(ward, docName);
-              handleQueueShift(ward, docName, index, clearedVal);
+              progressedWard = handleQueueShift(ward, docName, index, clearedVal);
             }
+            if (progressedWard) notifyTreatmentProgress(docName, progressedWard);
           } else {
             console.log(`[Click Debug] Click on normal item at index 0. Transitioning to progress.`);
             state[ward][docName][index] = String(currentVal) + '_progress';
             clearOtherWardsProgress(docName, ward);
+            notifyTreatmentProgress(docName, ward);
           }
           saveStateForDoctor(docName);
           updateUI();
@@ -1799,7 +1911,8 @@ function clearActiveSlot() {
     compactRowState(ward, docName);
     
     if (wasProgress) {
-      handleQueueShift(ward, docName, index, clearedVal);
+      const progressedWard = handleQueueShift(ward, docName, index, clearedVal);
+      if (progressedWard) notifyTreatmentProgress(docName, progressedWard);
     }
     
     saveStateForDoctor(docName);
