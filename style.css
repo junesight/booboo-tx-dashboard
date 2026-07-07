@@ -2159,66 +2159,68 @@ body.header-collapsed .btn-toggle-header {
 }
 
 /* ==========================================
-   2층 치료실 단독 뷰 1.5배 확대 최적화 (표준 CSS 방식)
+   2층 치료실 단독 뷰 1.5배 확대 최적화 (데스크톱 전용)
    ========================================== */
-body[data-active-tab="floor2"] #panel-floor2 {
-  width: 96% !important;
-  max-width: 1350px !important;
-  margin: 0 auto !important;
-  grid-template-columns: minmax(150px, 150px) 1fr !important;
-  column-gap: 3rem !important;
-  row-gap: 1.5rem !important;
-  padding: 3rem !important;
-}
+@media (min-width: 1025px) {
+  body[data-active-tab="floor2"] #panel-floor2 {
+    width: 96% !important;
+    max-width: 1350px !important;
+    margin: 0 auto !important;
+    grid-template-columns: minmax(150px, 150px) 1fr !important;
+    column-gap: 3rem !important;
+    row-gap: 1.5rem !important;
+    padding: 3rem !important;
+  }
 
-body[data-active-tab="floor2"] #panel-floor2 .grid-header h2 {
-  font-size: 1.85rem !important;
-}
+  body[data-active-tab="floor2"] #panel-floor2 .grid-header h2 {
+    font-size: 1.85rem !important;
+  }
 
-body[data-active-tab="floor2"] #panel-floor2 .director-left-cell {
-  padding: 1.2rem !important;
-}
+  body[data-active-tab="floor2"] #panel-floor2 .director-left-cell {
+    padding: 1.2rem !important;
+  }
 
-body[data-active-tab="floor2"] #panel-floor2 .director-tag {
-  padding: 1.1rem 0.9rem !important;
-  font-size: 1.8rem !important;
-}
+  body[data-active-tab="floor2"] #panel-floor2 .director-tag {
+    padding: 1.1rem 0.9rem !important;
+    font-size: 1.8rem !important;
+  }
 
-body[data-active-tab="floor2"] #panel-floor2 .leave-time-btn {
-  padding: 0.35rem 0.7rem !important;
-  font-size: 1.0rem !important;
-}
+  body[data-active-tab="floor2"] #panel-floor2 .leave-time-btn {
+    padding: 0.35rem 0.7rem !important;
+    font-size: 1.0rem !important;
+  }
 
-body[data-active-tab="floor2"] #panel-floor2 .slots-container {
-  padding: 0.4rem !important;
-  gap: 0.35rem !important;
-}
+  body[data-active-tab="floor2"] #panel-floor2 .slots-container {
+    padding: 0.4rem !important;
+    gap: 0.35rem !important;
+  }
 
-body[data-active-tab="floor2"] #panel-floor2 .slot {
-  max-width: 120px !important;
-  max-height: 120px !important;
-}
+  body[data-active-tab="floor2"] #panel-floor2 .slot {
+    max-width: 120px !important;
+    max-height: 120px !important;
+  }
 
-body[data-active-tab="floor2"] #panel-floor2 .slot-magnet {
-  font-size: 3.6rem !important;
-  border-width: 6px !important;
-}
+  body[data-active-tab="floor2"] #panel-floor2 .slot-magnet {
+    font-size: 3.6rem !important;
+    border-width: 6px !important;
+  }
 
-body[data-active-tab="floor2"] #panel-floor2 .slot-magnet.text-magnet {
-  font-size: 1.7rem !important;
-}
+  body[data-active-tab="floor2"] #panel-floor2 .slot-magnet.text-magnet {
+    font-size: 1.7rem !important;
+  }
 
-body[data-active-tab="floor2"] #panel-floor2 .arrow-subtext {
-  font-size: 1.15rem !important;
-  margin-top: 3px !important;
-}
+  body[data-active-tab="floor2"] #panel-floor2 .arrow-subtext {
+    font-size: 1.15rem !important;
+    margin-top: 3px !important;
+  }
 
-body[data-active-tab="floor2"] #panel-floor2 .slot.opt-arrow .slot-magnet {
-  font-size: 2.3rem !important;
-}
+  body[data-active-tab="floor2"] #panel-floor2 .slot.opt-arrow .slot-magnet {
+    font-size: 2.3rem !important;
+  }
 
-body[data-active-tab="floor2"] #panel-floor2::before {
-  left: calc(3rem + 150px + 1.5rem) !important;
-  top: 3rem !important;
-  bottom: 3rem !important;
+  body[data-active-tab="floor2"] #panel-floor2::before {
+    left: calc(3rem + 150px + 1.5rem) !important;
+    top: 3rem !important;
+    bottom: 3rem !important;
+  }
 }
