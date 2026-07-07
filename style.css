@@ -2167,7 +2167,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
   margin: 0 auto !important;
   grid-template-columns: minmax(150px, 150px) 1fr !important;
   column-gap: 3rem !important;
-  row-gap: 2.25rem !important;
+  row-gap: 1.5rem !important;
   padding: 3rem !important;
 }
 
