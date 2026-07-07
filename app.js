@@ -4,6 +4,8 @@ const supabaseKey = 'sb_publishable_yUeE6ynEpbR3Eq-k3Gv1Ew_1DiaJHjz';
 const supabaseClient = window.supabase ? window.supabase.createClient(supabaseUrl, supabaseKey) : null;
 const SLACK_NOTIFY_DOCTOR = '김준현';
 const SLACK_NOTIFY_FUNCTION = 'notify-slack-treatment';
+const INITIAL_TREATMENT_FOLLOWUP_DELAY_MS = 3 * 60 * 1000;
+const treatmentNotificationTimers = {};
 
 // Connection Status Indicator Updater
 function updateConnectionStatus(status) {
@@ -861,6 +863,17 @@ function isArrowItem(val) {
   return arrows.includes(val);
 }
 
+function getTargetWardForArrow(val) {
+  const cleanVal = cleanProgressValue(val);
+  if (cleanVal === '▶' || cleanVal === '➡️' || cleanVal === '→') return 'male';
+  if (cleanVal === '◀' || cleanVal === '⬅️' || cleanVal === '←') return 'female';
+  if (cleanVal === '▲' || cleanVal === '⬆️' || cleanVal === '↑') return 'secondFloor';
+  if (cleanVal === '▼' || cleanVal === '⬇️' || cleanVal === '↓') return 'female';
+  if (cleanVal === '▼여') return 'female';
+  if (cleanVal === '▼남') return 'male';
+  return null;
+}
+
 function cleanProgressValue(val) {
   if (typeof val === 'string' && val.endsWith('_progress')) {
     return val.substring(0, val.length - 9);
@@ -888,7 +901,55 @@ function formatTreatmentLabel(val) {
   return String(cleanVal).replace(/<br\s*\/?>/gi, '/');
 }
 
-function buildTreatmentNotificationPayload(docName, ward) {
+function formatTreatmentKind(val) {
+  const cleanVal = cleanProgressValue(val);
+  if (cleanVal === null || cleanVal === undefined || cleanVal === '') return null;
+  const stringVal = String(cleanVal).replace(/<br\s*\/?>/gi, '/');
+
+  if (stringVal.startsWith('사혈_')) return 'bloodletting';
+  if (stringVal === '상담') return 'consultation';
+  if (stringVal === '린다이어트') return 'diet';
+  if (stringVal === '한약상담') return 'herbal-consult';
+  if (stringVal === '추나') return 'chuna';
+  if (stringVal === '초음파') return 'ultrasound';
+  if (stringVal === '자하거/디나') return 'placenta';
+  if (stringVal === '식사') return 'meal';
+  return 'acupuncture';
+}
+
+function isMealTreatment(val) {
+  return formatTreatmentKind(val) === 'meal';
+}
+
+function findNextTreatmentRaw(ward, docName) {
+  const row = state[ward]?.[docName];
+  if (!Array.isArray(row)) return null;
+
+  for (let i = 1; i < row.length; i++) {
+    const cleanVal = cleanProgressValue(row[i]);
+    if (cleanVal === null || cleanVal === undefined || cleanVal === '') continue;
+
+    if (isArrowItem(cleanVal)) {
+      const targetWard = getTargetWardForArrow(cleanVal);
+      const targetRow = targetWard ? state[targetWard]?.[docName] : null;
+      if (!Array.isArray(targetRow)) return null;
+
+      return targetRow.find(targetVal => {
+        const cleanTargetVal = cleanProgressValue(targetVal);
+        return cleanTargetVal !== null
+          && cleanTargetVal !== undefined
+          && cleanTargetVal !== ''
+          && !isArrowItem(cleanTargetVal);
+      }) || null;
+    }
+
+    return row[i];
+  }
+
+  return null;
+}
+
+function buildTreatmentNotificationPayload(docName, ward, notificationType = 'progress-followup') {
   if (docName !== SLACK_NOTIFY_DOCTOR) return null;
   if (!state[ward] || !Array.isArray(state[ward][docName])) return null;
 
@@ -898,13 +959,10 @@ function buildTreatmentNotificationPayload(docName, ward) {
 
   const currentValue = cleanProgressValue(currentRaw);
   if (isArrowItem(currentValue)) return null;
-
-  const nextRaw = row.slice(1).find(val => {
-    const cleanVal = cleanProgressValue(val);
-    return cleanVal !== null && cleanVal !== undefined && cleanVal !== '' && !isArrowItem(cleanVal);
-  });
+  if (formatTreatmentKind(currentValue) === 'meal') return null;
 
   const currentLabel = formatTreatmentLabel(currentValue);
+  const nextRaw = findNextTreatmentRaw(ward, docName);
   const nextLabel = formatTreatmentLabel(nextRaw);
   if (!currentLabel) return null;
 
@@ -912,9 +970,12 @@ function buildTreatmentNotificationPayload(docName, ward) {
     doctorName: docName,
     ward,
     wardLabel: getWardLabel(ward),
+    notificationType,
     currentTreatment: currentLabel,
+    currentTreatmentKind: formatTreatmentKind(currentValue),
     nextTreatment: nextLabel,
-    eventKey: `${docName}|${ward}|${currentLabel}|${nextLabel || 'none'}|${JSON.stringify(row.slice(0, 4))}`
+    nextTreatmentKind: formatTreatmentKind(nextRaw),
+    eventKey: `${notificationType}|${docName}|${ward}|${currentLabel}|${nextLabel || 'none'}|${JSON.stringify(row.slice(0, 4))}`
   };
 }
 
@@ -945,10 +1006,10 @@ function markTreatmentNotificationSent(payload) {
   }
 }
 
-async function notifyTreatmentProgress(docName, ward) {
+async function sendTreatmentNotification(docName, ward, notificationType = 'progress-followup') {
   if (!supabaseClient) return;
 
-  const payload = buildTreatmentNotificationPayload(docName, ward);
+  const payload = buildTreatmentNotificationPayload(docName, ward, notificationType);
   if (!payload || hasRecentTreatmentNotification(payload)) return;
 
   try {
@@ -965,6 +1026,35 @@ async function notifyTreatmentProgress(docName, ward) {
   }
 }
 
+function scheduleTreatmentFollowupNotification(docName, ward, expectedCurrentTreatment, delayMs) {
+  if (docName !== SLACK_NOTIFY_DOCTOR || !expectedCurrentTreatment) return;
+
+  const timerKey = `${docName}|${ward}`;
+  if (treatmentNotificationTimers[timerKey]) {
+    clearTimeout(treatmentNotificationTimers[timerKey]);
+  }
+
+  treatmentNotificationTimers[timerKey] = setTimeout(() => {
+    delete treatmentNotificationTimers[timerKey];
+    const payload = buildTreatmentNotificationPayload(docName, ward, 'progress-followup');
+    if (!payload || payload.currentTreatment !== expectedCurrentTreatment) return;
+    sendTreatmentNotification(docName, ward, 'progress-followup');
+  }, delayMs);
+}
+
+function notifyInitialTreatmentStart(docName, ward) {
+  const payload = buildTreatmentNotificationPayload(docName, ward, 'treatment-start');
+  if (!payload) return;
+  sendTreatmentNotification(docName, ward, 'treatment-start');
+  scheduleTreatmentFollowupNotification(docName, ward, payload.currentTreatment, INITIAL_TREATMENT_FOLLOWUP_DELAY_MS);
+}
+
+function notifyNextTreatmentStart(docName, ward) {
+  const payload = buildTreatmentNotificationPayload(docName, ward, 'progress-followup');
+  if (!payload) return;
+  sendTreatmentNotification(docName, ward, 'progress-followup');
+}
+
 // Handle cross-ward routing and standard queue shifts when an item is cleared from index 0
 function handleQueueShift(ward, docName, index, clearedValue) {
   if (index !== 0 || !clearedValue) return null;
@@ -975,20 +1065,7 @@ function handleQueueShift(ward, docName, index, clearedValue) {
   }
   
   // 1. Cross-ward routing trigger if a transfer button was clicked
-  let targetWard = null;
-  if (cleanVal === '▶' || cleanVal === '➡️' || cleanVal === '→') {
-    targetWard = 'male';
-  } else if (cleanVal === '◀' || cleanVal === '⬅️' || cleanVal === '←') {
-    targetWard = 'female';
-  } else if (cleanVal === '▲' || cleanVal === '⬆️' || cleanVal === '↑') {
-    targetWard = 'secondFloor';
-  } else if (cleanVal === '▼' || cleanVal === '⬇️' || cleanVal === '↓') {
-    targetWard = 'female'; // Default to female ward for 1st floor
-  } else if (cleanVal === '▼여') {
-    targetWard = 'female';
-  } else if (cleanVal === '▼남') {
-    targetWard = 'male';
-  }
+  const targetWard = getTargetWardForArrow(cleanVal);
   
   if (targetWard) {
     const targetItem = state[targetWard][docName][0];
@@ -1180,7 +1257,10 @@ function setupEventListeners() {
             console.log(`[Click Debug] Click on progress item at index 0. Immediate delete.`);
             const clearedVal = state[ward][docName][index];
             let progressedWard = null;
-            if (state[ward][docName][1] && isArrowItem(state[ward][docName][1])) {
+            if (isMealTreatment(clearedVal)) {
+              state[ward][docName].splice(index, 1);
+              compactRowState(ward, docName);
+            } else if (state[ward][docName][1] && isArrowItem(state[ward][docName][1])) {
               const arrowVal = state[ward][docName][1];
               state[ward][docName].splice(0, 2);
               compactRowState(ward, docName);
@@ -1190,12 +1270,12 @@ function setupEventListeners() {
               compactRowState(ward, docName);
               progressedWard = handleQueueShift(ward, docName, index, clearedVal);
             }
-            if (progressedWard) notifyTreatmentProgress(docName, progressedWard);
+            if (progressedWard) notifyNextTreatmentStart(docName, progressedWard);
           } else {
             console.log(`[Click Debug] Click on normal item at index 0. Transitioning to progress.`);
             state[ward][docName][index] = String(currentVal) + '_progress';
             clearOtherWardsProgress(docName, ward);
-            notifyTreatmentProgress(docName, ward);
+            notifyInitialTreatmentStart(docName, ward);
           }
           saveStateForDoctor(docName);
           updateUI();
@@ -1911,8 +1991,10 @@ function clearActiveSlot() {
     compactRowState(ward, docName);
     
     if (wasProgress) {
-      const progressedWard = handleQueueShift(ward, docName, index, clearedVal);
-      if (progressedWard) notifyTreatmentProgress(docName, progressedWard);
+      const progressedWard = isMealTreatment(clearedVal)
+        ? null
+        : handleQueueShift(ward, docName, index, clearedVal);
+      if (progressedWard) notifyNextTreatmentStart(docName, progressedWard);
     }
     
     saveStateForDoctor(docName);

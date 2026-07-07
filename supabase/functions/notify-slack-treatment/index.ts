@@ -8,8 +8,11 @@ type TreatmentNotificationRequest = {
   doctorName?: string;
   ward?: string;
   wardLabel?: string;
+  notificationType?: 'treatment-start' | 'progress-followup';
   currentTreatment?: string;
+  currentTreatmentKind?: string | null;
   nextTreatment?: string | null;
+  nextTreatmentKind?: string | null;
   eventKey?: string;
 };
 
@@ -40,6 +43,25 @@ async function callSlackApi(method: string, token: string, payload: Record<strin
   }
 
   return data;
+}
+
+function treatmentPhrase(label: string, kind?: string | null) {
+  if (kind === 'consultation') return '상담';
+  if (kind === 'diet') return '린다이어트 상담';
+  if (kind === 'herbal-consult') return '한약상담';
+  if (kind === 'chuna') return '추나 치료';
+  if (kind === 'ultrasound') return '초음파 약침 시술';
+  if (kind === 'placenta') return '자하거/디나 시술';
+  if (kind === 'bloodletting') return label;
+  if (kind === 'meal') return '식사';
+  return `${label} 침치료`;
+}
+
+function currentTreatmentText(label: string, kind?: string | null) {
+  const phrase = treatmentPhrase(label, kind);
+  return kind === 'acupuncture' || !kind
+    ? `현재 ${phrase} 중입니다.`
+    : `현재 ${phrase}중입니다.`;
 }
 
 Deno.serve(async (req) => {
@@ -73,11 +95,15 @@ Deno.serve(async (req) => {
     return jsonResponse({ ok: false, error: 'missing_current_treatment' }, 400);
   }
 
+  const notificationType = body.notificationType || 'progress-followup';
   const nextText = body.nextTreatment
-    ? `다음 치료는 ${body.nextTreatment}입니다.`
+    ? (body.nextTreatmentKind === 'acupuncture' || !body.nextTreatmentKind
+      ? `다음 치료는 ${body.nextTreatment} 입니다.`
+      : `다음 순서는 ${treatmentPhrase(body.nextTreatment, body.nextTreatmentKind)}입니다.`)
     : '다음 치료는 없습니다.';
-  const wardPrefix = body.wardLabel ? `[${body.wardLabel}]\n` : '';
-  const text = `${wardPrefix}${body.currentTreatment} 침치료중입니다.\n${nextText}`;
+  const text = notificationType === 'treatment-start'
+    ? `${body.currentTreatment} 침치료 있습니다.`
+    : `${currentTreatmentText(body.currentTreatment, body.currentTreatmentKind)}\n${nextText}`;
 
   try {
     const openResult = await callSlackApi('conversations.open', slackBotToken, {

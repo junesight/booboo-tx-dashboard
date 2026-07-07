@@ -14,18 +14,34 @@ Expected request body:
   "doctorName": "김준현",
   "ward": "female",
   "wardLabel": "여자 치료실",
+  "notificationType": "progress-followup",
   "currentTreatment": "5번",
+  "currentTreatmentKind": "acupuncture",
   "nextTreatment": "2번",
-  "eventKey": "김준현|female|5번|2번|..."
+  "nextTreatmentKind": "acupuncture",
+  "eventKey": "progress-followup|김준현|female|5번|2번|..."
 }
 ```
 
-Slack message example:
+Initial Slack message example:
 
 ```text
-[여자 치료실]
-5번 침치료중입니다.
-다음 치료는 2번입니다.
+5번 침치료 있습니다.
 ```
+
+Follow-up Slack message example:
+
+```text
+현재 5번 침치료 중입니다.
+다음 치료는 2번 입니다.
+```
+
+Meal slots are only announced as the next order:
+
+```text
+다음 순서는 식사입니다.
+```
+
+No Slack message is sent while meal itself is in progress.
 
 Do not commit Slack tokens or Slack user IDs unless the user explicitly accepts that exposure risk.
