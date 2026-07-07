@@ -19,27 +19,28 @@ Expected request body:
   "currentTreatmentKind": "acupuncture",
   "nextTreatment": "2번",
   "nextTreatmentKind": "acupuncture",
-  "eventKey": "progress-followup|김준현|female|5번|2번|..."
+  "eventKey": "progress-followup|김준현|female|5번|2번|acupuncture"
 }
 ```
 
 Initial Slack message example:
 
 ```text
-5번 침치료 있습니다.
+[[ 5번 ]] 침 치료 있습니다.
+다음 순서는 [[ 2번 ]] 입니다.
 ```
 
 Follow-up Slack message example:
 
 ```text
-현재 5번 침치료 중입니다.
-다음 치료는 2번 입니다.
+현재 [[ 5번 ]] 침 치료중입니다.
+다음 순서는 [[ 2번 ]] 입니다.
 ```
 
 Meal slots are only announced as the next order:
 
 ```text
-다음 순서는 식사입니다.
+다음 순서는 [[ 식사 ]] 입니다.
 ```
 
 No Slack message is sent while meal itself is in progress.

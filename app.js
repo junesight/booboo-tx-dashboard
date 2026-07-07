@@ -979,7 +979,7 @@ function buildTreatmentNotificationPayload(docName, ward, notificationType = 'pr
     currentTreatmentKind: formatTreatmentKind(currentValue),
     nextTreatment: nextLabel,
     nextTreatmentKind: formatTreatmentKind(nextRaw),
-    eventKey: `${notificationType}|${docName}|${ward}|${currentLabel}|${nextLabel || 'none'}|${JSON.stringify(row.slice(0, 4))}`
+    eventKey: `${notificationType}|${docName}|${ward}|${currentLabel}|${nextLabel || 'none'}|${formatTreatmentKind(nextRaw) || 'none'}`
   };
 }
 
@@ -1057,6 +1057,24 @@ function notifyNextTreatmentStart(docName, ward) {
   const payload = buildTreatmentNotificationPayload(docName, ward, 'progress-followup');
   if (!payload) return;
   sendTreatmentNotification(docName, ward, 'progress-followup');
+}
+
+function notifyTreatmentOrderChanged(docName, ward) {
+  const payload = buildTreatmentNotificationPayload(docName, ward, 'progress-followup');
+  if (!payload) return;
+  sendTreatmentNotification(docName, ward, 'progress-followup');
+}
+
+function notifyTreatmentOrderChangedForWardAndDependents(docName, changedWard) {
+  ['female', 'male', 'secondFloor'].forEach(ward => {
+    const row = state[ward]?.[docName];
+    if (!Array.isArray(row)) return;
+
+    const dependsOnChangedWard = getTargetWardForArrow(row[1]) === changedWard;
+    if (ward === changedWard || dependsOnChangedWard) {
+      notifyTreatmentOrderChanged(docName, ward);
+    }
+  });
 }
 
 // Handle cross-ward routing and standard queue shifts when an item is cleared from index 0
@@ -1298,6 +1316,7 @@ function setupEventListeners() {
             state[ward][docName].splice(index, 1);
             compactRowState(ward, docName);
             saveStateField(['state', ward, docName], state[ward][docName]);
+            notifyTreatmentOrderChangedForWardAndDependents(docName, ward);
             updateUI();
           } else {
             console.log(`[Click Debug] First click on waiting item at index ${index}. Activating 3s red confirmation.`);
@@ -1575,11 +1594,14 @@ function setupEventListeners() {
           
           if (sourceDoc === targetDoc) {
             saveStateField(['state', sourceWard, sourceDoc], state[sourceWard][sourceDoc]);
+            notifyTreatmentOrderChangedForWardAndDependents(sourceDoc, sourceWard);
           } else {
             Promise.all([
               saveStateField(['state', sourceWard, sourceDoc], state[sourceWard][sourceDoc]),
               saveStateField(['state', targetWard, targetDoc], state[targetWard][targetDoc])
             ]);
+            notifyTreatmentOrderChangedForWardAndDependents(sourceDoc, sourceWard);
+            notifyTreatmentOrderChangedForWardAndDependents(targetDoc, targetWard);
           }
           updateUI();
         }
@@ -1980,6 +2002,7 @@ function selectBedNumber(num) {
     }
     compactRowState(ward, docName);
     saveStateField(['state', ward, docName], state[ward][docName]);
+    notifyTreatmentOrderChangedForWardAndDependents(docName, ward);
     updateUI();
     closeModal();
   }
@@ -1999,6 +2022,8 @@ function clearActiveSlot() {
         ? null
         : handleQueueShift(ward, docName, index, clearedVal);
       if (progressedWard) notifyNextTreatmentStart(docName, progressedWard);
+    } else {
+      notifyTreatmentOrderChangedForWardAndDependents(docName, ward);
     }
     
     saveStateForDoctor(docName);

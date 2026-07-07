@@ -45,23 +45,35 @@ async function callSlackApi(method: string, token: string, payload: Record<strin
   return data;
 }
 
-function treatmentPhrase(label: string, kind?: string | null) {
+function bracketed(label: string) {
+  return `[[ ${label} ]]`;
+}
+
+function treatmentName(label: string, kind?: string | null) {
   if (kind === 'consultation') return '상담';
   if (kind === 'diet') return '린다이어트 상담';
-  if (kind === 'herbal-consult') return '한약상담';
-  if (kind === 'chuna') return '추나 치료';
-  if (kind === 'ultrasound') return '초음파 약침 시술';
-  if (kind === 'placenta') return '자하거/디나 시술';
+  if (kind === 'herbal-consult') return '한약 상담';
+  if (kind === 'chuna') return '추나';
+  if (kind === 'ultrasound') return '초음파 약침';
+  if (kind === 'placenta') return '자하거/디나';
   if (kind === 'bloodletting') return label;
   if (kind === 'meal') return '식사';
-  return `${label} 침치료`;
+  return label;
 }
 
 function currentTreatmentText(label: string, kind?: string | null) {
-  const phrase = treatmentPhrase(label, kind);
-  return kind === 'acupuncture' || !kind
-    ? `현재 ${phrase} 중입니다.`
-    : `현재 ${phrase}중입니다.`;
+  const name = bracketed(treatmentName(label, kind));
+  if (kind === 'acupuncture' || !kind) return `현재 ${name} 침 치료중입니다.`;
+  if (kind === 'chuna') return `현재 ${name} 치료중입니다.`;
+  if (kind === 'ultrasound' || kind === 'placenta') return `현재 ${name} 시술중입니다.`;
+  return `현재 ${name} 중입니다.`;
+}
+
+function nextTreatmentText(label: string, kind?: string | null) {
+  const name = bracketed(treatmentName(label, kind));
+  if (kind === 'chuna') return `다음 순서는 ${name} 치료입니다.`;
+  if (kind === 'ultrasound' || kind === 'placenta') return `다음 순서는 ${name} 시술입니다.`;
+  return `다음 순서는 ${name} 입니다.`;
 }
 
 Deno.serve(async (req) => {
@@ -97,12 +109,10 @@ Deno.serve(async (req) => {
 
   const notificationType = body.notificationType || 'progress-followup';
   const nextText = body.nextTreatment
-    ? (body.nextTreatmentKind === 'acupuncture' || !body.nextTreatmentKind
-      ? `다음 치료는 ${body.nextTreatment} 입니다.`
-      : `다음 순서는 ${treatmentPhrase(body.nextTreatment, body.nextTreatmentKind)}입니다.`)
-    : '다음 치료는 없습니다.';
+    ? nextTreatmentText(body.nextTreatment, body.nextTreatmentKind)
+    : '다음 순서는 없습니다.';
   const text = notificationType === 'treatment-start'
-    ? `${body.currentTreatment} 침치료 있습니다.`
+    ? `${bracketed(body.currentTreatment)} 침 치료 있습니다.\n${nextText}`
     : `${currentTreatmentText(body.currentTreatment, body.currentTreatmentKind)}\n${nextText}`;
 
   try {
