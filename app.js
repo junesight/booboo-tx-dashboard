@@ -1016,6 +1016,9 @@ async function sendTreatmentNotification(docName, ward, notificationType = 'prog
   const payload = buildTreatmentNotificationPayload(docName, ward, notificationType);
   if (!payload || hasRecentTreatmentNotification(payload)) return;
 
+  // 🔒 Lock immediately to prevent asynchronous race condition
+  markTreatmentNotificationSent(payload);
+
   try {
     const { error } = await supabaseClient.functions.invoke(SLACK_NOTIFY_FUNCTION, {
       body: payload
@@ -1024,7 +1027,6 @@ async function sendTreatmentNotification(docName, ward, notificationType = 'prog
       console.error('Slack treatment notification failed:', error);
       return;
     }
-    markTreatmentNotificationSent(payload);
   } catch (e) {
     console.error('Slack treatment notification exception:', e);
   }
@@ -1066,15 +1068,8 @@ function notifyTreatmentOrderChanged(docName, ward) {
 }
 
 function notifyTreatmentOrderChangedForWardAndDependents(docName, changedWard) {
-  ['female', 'male', 'secondFloor'].forEach(ward => {
-    const row = state[ward]?.[docName];
-    if (!Array.isArray(row)) return;
-
-    const dependsOnChangedWard = getTargetWardForArrow(row[1]) === changedWard;
-    if (ward === changedWard || dependsOnChangedWard) {
-      notifyTreatmentOrderChanged(docName, ward);
-    }
-  });
+  // Only notify the changed ward where the action occurred
+  notifyTreatmentOrderChanged(docName, changedWard);
 }
 
 // Handle cross-ward routing and standard queue shifts when an item is cleared from index 0
