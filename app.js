@@ -1062,9 +1062,9 @@ function notifyNextTreatmentStart(docName, ward) {
 }
 
 function notifyTreatmentOrderChanged(docName, ward) {
-  const payload = buildTreatmentNotificationPayload(docName, ward, 'progress-followup');
-  if (!payload) return;
-  sendTreatmentNotification(docName, ward, 'progress-followup');
+  // 🔕 Disable immediate Slack notification when queue order changes to prevent spamming the doctor.
+  // The doctor will receive the follow-up reminder after 3 minutes, and a notification when the next treatment starts.
+  return;
 }
 
 function notifyTreatmentOrderChangedForWardAndDependents(docName, changedWard) {
