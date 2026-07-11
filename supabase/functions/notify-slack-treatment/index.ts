@@ -76,6 +76,13 @@ function nextTreatmentText(label: string, kind?: string | null) {
   return `다음 순서는 ${name} 입니다.`;
 }
 
+function startTreatmentText(label: string, kind?: string | null) {
+  const name = bracketed(treatmentName(label, kind));
+  if (kind === 'acupuncture' || !kind) return `${name} 침 치료 있습니다.`;
+  if (kind === 'ultrasound' || kind === 'placenta') return `${name} 시술 있습니다.`;
+  return `${name} 있습니다.`;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -112,7 +119,7 @@ Deno.serve(async (req) => {
     ? nextTreatmentText(body.nextTreatment, body.nextTreatmentKind)
     : '다음 순서는 없습니다.';
   const text = notificationType === 'treatment-start'
-    ? `${bracketed(body.currentTreatment)} 침 치료 있습니다.\n${nextText}`
+    ? `${startTreatmentText(body.currentTreatment, body.currentTreatmentKind)}\n${nextText}`
     : `${currentTreatmentText(body.currentTreatment, body.currentTreatmentKind)}\n${nextText}`;
 
   try {
