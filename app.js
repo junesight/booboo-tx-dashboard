@@ -4,6 +4,7 @@ const supabaseKey = 'sb_publishable_yUeE6ynEpbR3Eq-k3Gv1Ew_1DiaJHjz';
 const supabaseClient = window.supabase ? window.supabase.createClient(supabaseUrl, supabaseKey) : null;
 const SLACK_NOTIFY_DOCTOR = '김준현';
 const SLACK_NOTIFY_FUNCTION = 'notify-slack-treatment';
+let supabaseChannel = null;
 const INITIAL_TREATMENT_FOLLOWUP_DELAY_MS = 3 * 60 * 1000;
 const treatmentNotificationTimers = {};
 
@@ -329,9 +330,19 @@ function setupSupabaseRealtime() {
     return;
   }
 
+  // Remove existing channel if any
+  if (supabaseChannel) {
+    try {
+      console.log('[Realtime] Removing existing subscription before reconnect...');
+      supabaseClient.removeChannel(supabaseChannel);
+    } catch (e) {
+      console.warn('[Realtime] Error removing old channel:', e);
+    }
+  }
+
   updateConnectionStatus('connecting');
 
-  const channel = supabaseClient
+  supabaseChannel = supabaseClient
     .channel('public:clinic_state')
     .on(
       'postgres_changes',
@@ -356,7 +367,7 @@ function setupSupabaseRealtime() {
       }
     );
 
-  channel.subscribe((status, err) => {
+  supabaseChannel.subscribe((status, err) => {
     console.log("Supabase Realtime subscribe status:", status);
     if (status === 'SUBSCRIBED') {
       updateConnectionStatus('SUBSCRIBED');
@@ -1748,6 +1759,23 @@ function setupEventListeners() {
       }
     }
   });
+
+  // Detect tab visibility change or focus to trigger automatic data sync and realtime reconnection (debounced/cooldown)
+  let lastWakeupSyncTime = 0;
+  const handleVisibilityOrFocus = () => {
+    if (document.visibilityState === 'visible') {
+      const now = Date.now();
+      if (now - lastWakeupSyncTime < 2000) return; // Cooldown of 2 seconds
+      lastWakeupSyncTime = now;
+      
+      console.log('[Visibility Change] Tab became active/focused. Syncing state and reconnecting...');
+      pullStateFromSupabase();
+      setupSupabaseRealtime();
+    }
+  };
+
+  document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+  window.addEventListener('focus', handleVisibilityOrFocus);
 }
 
 // Open Selection Modal
@@ -2211,6 +2239,53 @@ function selectLeaveTime(val) {
 function closeLeaveTimeModal() {
   leaveTimeModalOverlay.classList.remove('active');
   activeLeaveTimeDoc = null;
+}
+
+// Fetch latest state from Supabase and redraw UI (used for manual/automatic reconnect syncing)
+async function pullStateFromSupabase() {
+  if (!supabaseClient) return;
+  
+  try {
+    console.log('[Sync] Pulling latest state from Supabase...');
+    const { data: dbRow, error } = await supabaseClient
+      .from('clinic_state')
+      .select('data')
+      .eq('id', 'global')
+      .single();
+      
+    if (!error && dbRow && dbRow.data) {
+      const dbData = dbRow.data;
+      if (dbData.state) Object.assign(state, dbData.state);
+      if (dbData.leaveTimes) Object.assign(leaveTimes, dbData.leaveTimes);
+      if (dbData.offDutyDirectors) Object.assign(offDutyDirectors, dbData.offDutyDirectors);
+      if (dbData.rowDirectorsFloor1) Object.assign(rowDirectorsFloor1, dbData.rowDirectorsFloor1);
+      if (dbData.rowDirectorsFloor2) Object.assign(rowDirectorsFloor2, dbData.rowDirectorsFloor2);
+      
+      // Normalize values
+      const wards = ['female', 'male', 'secondFloor'];
+      wards.forEach(w => {
+        if (state[w]) {
+          Object.keys(state[w]).forEach(d => {
+            if (Array.isArray(state[w][d])) {
+              state[w][d] = state[w][d].map(val => {
+                if (val === '자하거<br>디나') return '자하거/디나';
+                if (val === '자하거<br>디나_progress') return '자하거/디나_progress';
+                return val;
+              });
+            }
+          });
+        }
+      });
+      
+      sanitizeState(false);
+      updateUI();
+      console.log('[Sync] State pull and UI update complete.');
+    } else {
+      console.error('[Sync] Error pulling state from Supabase:', error);
+    }
+  } catch (e) {
+    console.error('[Sync] Exception pulling state from Supabase:', e);
+  }
 }
 
 // Initialize on page load
