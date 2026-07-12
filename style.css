@@ -1140,16 +1140,46 @@ body[data-active-tab="floor2"] #panel-floor2 {
   border-color: rgba(120, 136, 150, 0.3) !important; 
 }
 .slot.opt-arrow .slot-magnet {
-  background: #788896; /* Slate silver-gray */
+  background: #ffffff;
   color: #ffffff;
-  font-size: 1.75rem !important;
-  font-weight: 700;
-  line-height: 1.1 !important;
+  font-size: 2.8rem !important; /* Large arrow symbol */
+  font-weight: 800;
+  line-height: 1 !important;
   text-shadow: none;
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
+}
+
+/* 남치 / 1층 남치 - 배경은 흰색, 글씨는 하늘색 */
+.slot.opt-arrow-male .slot-magnet,
+.slot.opt-arrow-floor1-male .slot-magnet {
+  background: #ffffff !important;
+  color: var(--male-accent) !important; /* Sky blue */
+}
+.slot.opt-arrow-male,
+.slot.opt-arrow-floor1-male {
+  border-color: rgba(14, 165, 233, 0.3) !important;
+}
+
+/* 여치 / 1층 여치 - 배경은 흰색, 글씨는 붉은색 */
+.slot.opt-arrow-female .slot-magnet,
+.slot.opt-arrow-floor1-female .slot-magnet {
+  background: #ffffff !important;
+  color: var(--female-accent) !important; /* Rose red */
+}
+.slot.opt-arrow-female,
+.slot.opt-arrow-floor1-female {
+  border-color: rgba(244, 63, 94, 0.3) !important;
+}
+
+/* 2층 - 배경은 흰색, 글씨는 녹색 */
+.slot.opt-arrow-floor2 .slot-magnet {
+  background: #ffffff !important;
+  color: #10b981 !important; /* Emerald green */
+}
+.slot.opt-arrow-floor2 {
+  border-color: rgba(16, 185, 129, 0.3) !important;
 }
 
 .arrow-subtext {
@@ -1375,73 +1405,153 @@ body[data-active-tab="floor2"] #panel-floor2 {
   transform: scale(1.03);
 }
 
-/* Individual Special Button states inside modal */
-.special-btn.btn-ultrasound:hover, .special-btn.btn-ultrasound.active {
-  background: #0f172a;
-  color: white;
-  border-color: #0f172a;
+/* Individual Special Button states inside modal (Always colored, dim when inactive) */
+.special-btn.btn-consultation {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+  border: 1px solid #ef4444 !important;
+  opacity: 0.55;
 }
 
-.special-btn.btn-consultation:hover, .special-btn.btn-consultation.active {
-  background: #ef4444;
-  color: white;
-  border-color: #ef4444;
+.special-btn.btn-diet {
+  background: #6340CD !important;
+  color: #ffffff !important;
+  border: 1px solid #6340CD !important;
+  opacity: 0.55;
 }
 
-.special-btn.btn-herbal-consult:hover, .special-btn.btn-herbal-consult.active {
-  background: #8f633d;
-  color: white;
-  border-color: #8f633d;
+.special-btn.btn-herbal-consult {
+  background: #8f633d !important;
+  color: #ffffff !important;
+  border: 1px solid #8f633d !important;
+  opacity: 0.55;
 }
 
-.special-btn.btn-chuna:hover, .special-btn.btn-chuna.active {
-  background: #facc15;
-  color: #0f172a;
-  border-color: #facc15;
+.special-btn.btn-chuna {
+  background: #facc15 !important;
+  color: #0f172a !important;
+  border: 1px solid #facc15 !important;
+  opacity: 0.55;
 }
 
-.special-btn.btn-diet:hover, .special-btn.btn-diet.active {
-  background: #6340CD;
-  color: white;
-  border-color: #6340CD;
+.special-btn.btn-ultrasound {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  border: 1px solid #0f172a !important;
+  opacity: 0.55;
 }
 
-.special-btn.btn-bloodletting:hover, .special-btn.btn-bloodletting.active {
-  background: #ec4899;
-  color: white;
-  border-color: #ec4899;
+.special-btn.btn-placenta {
+  background: #10b981 !important;
+  color: #ffffff !important;
+  border: 1px solid #10b981 !important;
+  opacity: 0.55;
 }
 
-.special-btn.btn-placenta:hover, .special-btn.btn-placenta.active {
-  background: #10b981;
-  color: white;
-  border-color: #10b981;
+.special-btn.btn-bloodletting {
+  background: #ec4899 !important;
+  color: #ffffff !important;
+  border: 1px solid #ec4899 !important;
+  opacity: 0.55;
 }
 
-
-.special-btn.btn-meal:hover, .special-btn.btn-meal.active {
-  background: #f97316;
-  color: white;
-  border-color: #f97316;
+.special-btn.btn-meal {
+  background: #f97316 !important;
+  color: #ffffff !important;
+  border: 1px solid #f97316 !important;
+  opacity: 0.55;
 }
 
+.special-btn.btn-divider {
+  background: #cbd5e1 !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+  opacity: 0.55;
+}
 
+/* Active or Hovered states - Fully bright, thick border highlight, slight scale up */
+.special-btn:hover,
+.special-btn.active {
+  opacity: 1 !important;
+  transform: scale(1.04) !important;
+}
+
+.special-btn.btn-consultation:hover, .special-btn.btn-consultation.active,
+.special-btn.btn-diet:hover, .special-btn.btn-diet.active,
+.special-btn.btn-herbal-consult:hover, .special-btn.btn-herbal-consult.active,
+.special-btn.btn-chuna:hover, .special-btn.btn-chuna.active,
+.special-btn.btn-placenta:hover, .special-btn.btn-placenta.active,
+.special-btn.btn-bloodletting:hover, .special-btn.btn-bloodletting.active,
+.special-btn.btn-meal:hover, .special-btn.btn-meal.active,
 .special-btn.btn-divider:hover, .special-btn.btn-divider.active {
-  background: #cbd5e1;
-  color: #0f172a;
-  border-color: #cbd5e1;
+  border: 3px solid #000000 !important;
+}
+
+/* Exception: For ultrasound (black background), a vivid sky-blue border stands out much better! */
+.special-btn.btn-ultrasound:hover, .special-btn.btn-ultrasound.active {
+  border: 3px solid #0ea5e9 !important;
 }
 
 .special-btn.btn-arrow {
-  font-size: 1.75rem;
-  line-height: 1.1;
+  font-size: 0.92rem; /* Match other special buttons font size */
+  line-height: 0.85; /* Extremely tight line height */
   flex-direction: column;
+  background: #f8fafc;
+  color: var(--text-secondary);
+  border: 1px solid var(--panel-border);
+}
+
+.special-btn.btn-arrow .arrow-symbol {
+  font-size: 1.5rem; /* Set arrow icon size specifically */
+  font-weight: 800;
+  display: inline-block;
+  margin-bottom: 0px;
+}
+
+.special-btn.btn-arrow .arrow-subtext {
+  color: var(--text-secondary);
+  margin-top: -3px !important; /* Pull text upward to nest closely with symbol */
 }
 
 .special-btn.btn-arrow:hover, .special-btn.btn-arrow.active {
-  background: #788896; /* Slate silver-gray */
-  color: white;
-  border-color: #788896;
+  background: #788896 !important;
+  border: 3px solid #000000 !important;
+}
+
+.special-btn.btn-arrow:hover .arrow-subtext,
+.special-btn.btn-arrow.active .arrow-subtext {
+  color: #ffffff !important;
+}
+
+/* Arrow symbol colors inside popup buttons */
+.special-btn.btn-arrow-male .arrow-symbol,
+.special-btn.btn-arrow-floor1-male .arrow-symbol {
+  color: #0ea5e9 !important;
+}
+.special-btn.btn-arrow-male:hover .arrow-symbol,
+.special-btn.btn-arrow-male.active .arrow-symbol,
+.special-btn.btn-arrow-floor1-male:hover .arrow-symbol,
+.special-btn.btn-arrow-floor1-male.active .arrow-symbol {
+  color: #38bdf8 !important;
+}
+
+.special-btn.btn-arrow-female .arrow-symbol,
+.special-btn.btn-arrow-floor1-female .arrow-symbol {
+  color: #f43f5e !important;
+}
+.special-btn.btn-arrow-female:hover .arrow-symbol,
+.special-btn.btn-arrow-female.active .arrow-symbol,
+.special-btn.btn-arrow-floor1-female:hover .arrow-symbol,
+.special-btn.btn-arrow-floor1-female.active .arrow-symbol {
+  color: #fb7185 !important;
+}
+
+.special-btn.btn-arrow-floor2 .arrow-symbol {
+  color: #10b981 !important;
+}
+.special-btn.btn-arrow-floor2:hover .arrow-symbol,
+.special-btn.btn-arrow-floor2.active .arrow-symbol {
+  color: #34d399 !important;
 }
 .modal-footer {
   display: flex;
@@ -1893,7 +2003,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
     margin-top: 0;
   }
   body[data-active-tab="all"] .slot.opt-arrow .slot-magnet {
-    font-size: 1.55rem !important;
+    font-size: 2.2rem !important;
   }
 }
 
@@ -2215,7 +2325,7 @@ body.header-collapsed .btn-toggle-header {
   }
 
   body[data-active-tab="floor2"] #panel-floor2 .slot.opt-arrow .slot-magnet {
-    font-size: 2.3rem !important;
+    font-size: 3.8rem !important;
   }
 
   body[data-active-tab="floor2"] #panel-floor2::before {

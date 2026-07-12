@@ -758,7 +758,7 @@ function updateUI() {
 // Update individual slot element
 function updateSlotDisplay(slotEl, val, index) {
   // Reset all classes related to value rendering
-  slotEl.classList.remove('occupied', 'opt-ultrasound', 'opt-consultation', 'opt-chuna', 'opt-diet', 'opt-divider', 'opt-arrow', 'opt-meal', 'opt-placenta', 'opt-bloodletting', 'opt-herbal-consult', 'opt-packet-consult', 'in-progress');
+  slotEl.classList.remove('occupied', 'opt-ultrasound', 'opt-consultation', 'opt-chuna', 'opt-diet', 'opt-divider', 'opt-arrow', 'opt-arrow-male', 'opt-arrow-female', 'opt-arrow-floor2', 'opt-arrow-floor1', 'opt-arrow-floor1-female', 'opt-arrow-floor1-male', 'opt-meal', 'opt-placenta', 'opt-bloodletting', 'opt-herbal-consult', 'opt-packet-consult', 'in-progress');
   
   if (val !== null) {
     let isProgress = false;
@@ -833,17 +833,23 @@ function updateSlotDisplay(slotEl, val, index) {
       slotEl.classList.add('opt-arrow');
       magnetClass += ' text-magnet';
       if (cleanVal === '▶' || cleanVal === '➡️' || cleanVal === '→') {
-        displayVal = '▶<br><span class="arrow-subtext">남치</span>';
+        slotEl.classList.add('opt-arrow-male');
+        displayVal = '▶';
       } else if (cleanVal === '◀' || cleanVal === '⬅️' || cleanVal === '←') {
-        displayVal = '◀<br><span class="arrow-subtext">여치</span>';
+        slotEl.classList.add('opt-arrow-female');
+        displayVal = '◀';
       } else if (cleanVal === '▲' || cleanVal === '⬆️' || cleanVal === '↑') {
-        displayVal = '▲<br><span class="arrow-subtext">2층</span>';
+        slotEl.classList.add('opt-arrow-floor2');
+        displayVal = '▲';
       } else if (cleanVal === '▼' || cleanVal === '⬇️' || cleanVal === '↓') {
-        displayVal = '▼<br><span class="arrow-subtext">1층</span>';
+        slotEl.classList.add('opt-arrow-floor1');
+        displayVal = '▼';
       } else if (cleanVal === '▼여') {
-        displayVal = '▼<br><span class="arrow-subtext">1층 여치</span>';
+        slotEl.classList.add('opt-arrow-floor1-female');
+        displayVal = '▼';
       } else if (cleanVal === '▼남') {
-        displayVal = '▼<br><span class="arrow-subtext">1층 남치</span>';
+        slotEl.classList.add('opt-arrow-floor1-male');
+        displayVal = '▼';
       }
     }
     
@@ -1945,35 +1951,35 @@ function openModal(ward, docName, index) {
   if (ward === 'female') {
     etcOptions.push({ 
       name: '▶', 
-      class: 'btn-arrow', 
-      displayName: '▶<br><span class="arrow-subtext">남치</span>' 
+      class: 'btn-arrow btn-arrow-male', 
+      displayName: '<span class="arrow-symbol">▶</span><br><span class="arrow-subtext">남치</span>' 
     });
     etcOptions.push({ 
       name: '▲', 
-      class: 'btn-arrow', 
-      displayName: '▲<br><span class="arrow-subtext">2층</span>' 
+      class: 'btn-arrow btn-arrow-floor2', 
+      displayName: '<span class="arrow-symbol">▲</span><br><span class="arrow-subtext">2층</span>' 
     });
   } else if (ward === 'male') {
     etcOptions.push({ 
       name: '◀', 
-      class: 'btn-arrow', 
-      displayName: '◀<br><span class="arrow-subtext">여치</span>' 
+      class: 'btn-arrow btn-arrow-female', 
+      displayName: '<span class="arrow-symbol">◀</span><br><span class="arrow-subtext">여치</span>' 
     });
     etcOptions.push({ 
       name: '▲', 
-      class: 'btn-arrow', 
-      displayName: '▲<br><span class="arrow-subtext">2층</span>' 
+      class: 'btn-arrow btn-arrow-floor2', 
+      displayName: '<span class="arrow-symbol">▲</span><br><span class="arrow-subtext">2층</span>' 
     });
   } else if (ward === 'secondFloor') {
     etcOptions.push({ 
       name: '▼여', 
-      class: 'btn-arrow', 
-      displayName: '▼<br><span class="arrow-subtext">1층 여치</span>' 
+      class: 'btn-arrow btn-arrow-floor1-female', 
+      displayName: '<span class="arrow-symbol">▼</span><br><span class="arrow-subtext">1층 여치</span>' 
     });
     etcOptions.push({ 
       name: '▼남', 
-      class: 'btn-arrow', 
-      displayName: '▼<br><span class="arrow-subtext">1층 남치</span>' 
+      class: 'btn-arrow btn-arrow-floor1-male', 
+      displayName: '<span class="arrow-symbol">▼</span><br><span class="arrow-subtext">1층 남치</span>' 
     });
   }
 
