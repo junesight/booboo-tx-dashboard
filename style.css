@@ -1234,8 +1234,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
   .slot-magnet.text-magnet {
     font-size: 0.95rem !important;
   }
-  .slot.opt-placenta .slot-magnet,
-  .slot.opt-herbal-consult .slot-magnet {
+  .slot.opt-placenta .slot-magnet {
     font-size: 0.85rem !important;
     line-height: 1.05 !important;
   }
@@ -1248,8 +1247,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
   .slot-magnet.text-magnet {
     font-size: 0.82rem !important;
   }
-  .slot.opt-placenta .slot-magnet,
-  .slot.opt-herbal-consult .slot-magnet {
+  .slot.opt-placenta .slot-magnet {
     font-size: 0.72rem !important;
     line-height: 1.0 !important;
   }

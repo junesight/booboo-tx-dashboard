@@ -811,7 +811,7 @@ function updateSlotDisplay(slotEl, val, index) {
     } else if (cleanVal === '한약상담') {
       slotEl.classList.add('opt-herbal-consult');
       magnetClass += ' text-magnet';
-      displayVal = '한약<br>상담';
+      displayVal = '한약';
     } else if (cleanVal === '추나') {
       slotEl.classList.add('opt-chuna');
       magnetClass += ' text-magnet';
