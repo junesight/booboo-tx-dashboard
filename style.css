@@ -1148,6 +1148,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
 .slot.opt-meal .slot-magnet {
   background: #f97316;
   color: #ffffff;
+  line-height: 1.05 !important;
 }
 
 /* 화살표 - 밝은 회색 배경 사각형 박스에 흰색 화살표 및 subtext */
@@ -1228,7 +1229,8 @@ body[data-active-tab="floor2"] #panel-floor2 {
     font-size: 0.95rem !important;
   }
   .slot.opt-placenta .slot-magnet,
-  .slot.opt-herbal-consult .slot-magnet {
+  .slot.opt-herbal-consult .slot-magnet,
+  .slot.opt-meal .slot-magnet {
     font-size: 0.85rem !important;
     line-height: 1.05 !important;
   }
@@ -1239,7 +1241,8 @@ body[data-active-tab="floor2"] #panel-floor2 {
     font-size: 0.82rem !important;
   }
   .slot.opt-placenta .slot-magnet,
-  .slot.opt-herbal-consult .slot-magnet {
+  .slot.opt-herbal-consult .slot-magnet,
+  .slot.opt-meal .slot-magnet {
     font-size: 0.72rem !important;
     line-height: 1.0 !important;
   }
