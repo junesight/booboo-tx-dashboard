@@ -70,6 +70,9 @@ function currentTreatmentText(label: string, kind?: string | null) {
 }
 
 function nextTreatmentText(label: string, kind?: string | null) {
+  if (label === '⏸️' || kind === 'pause') {
+    return '다음 순서는 [[ 일시정지 ]] 입니다. 잠시 후 다시 알려드리겠습니다.';
+  }
   const name = bracketed(treatmentName(label, kind));
   if (kind === 'chuna') return `다음 순서는 ${name} 치료입니다.`;
   if (kind === 'ultrasound' || kind === 'placenta') return `다음 순서는 ${name} 시술입니다.`;

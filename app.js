@@ -939,6 +939,7 @@ function formatTreatmentKind(val) {
   if (stringVal === '초음파') return 'ultrasound';
   if (stringVal === '자하거/디나') return 'placenta';
   if (stringVal === '식사') return 'meal';
+  if (stringVal === '⏸️') return 'pause';
   return 'acupuncture';
 }
 
@@ -1295,7 +1296,11 @@ function setupEventListeners() {
             console.log(`[Click Debug] Click on progress item at index 0. Immediate delete.`);
             const clearedVal = state[ward][docName][index];
             let progressedWard = null;
-            if (isMealTreatment(clearedVal)) {
+            if (state[ward][docName][1] === '⏸️') {
+              state[ward][docName].splice(0, 2);
+              compactRowState(ward, docName);
+              console.log(`[Pause Logic] Click handler: Cleared current item and encountered pause button at index 1. Removing both and halting progress.`);
+            } else if (isMealTreatment(clearedVal)) {
               state[ward][docName].splice(index, 1);
               compactRowState(ward, docName);
             } else if (state[ward][docName][1] && isArrowItem(state[ward][docName][1])) {
@@ -1310,10 +1315,15 @@ function setupEventListeners() {
             }
             if (progressedWard) notifyNextTreatmentStart(docName, progressedWard);
           } else {
-            console.log(`[Click Debug] Click on normal item at index 0. Transitioning to progress.`);
-            state[ward][docName][index] = String(currentVal) + '_progress';
-            clearOtherWardsProgress(docName, ward);
-            notifyInitialTreatmentStart(docName, ward);
+            if (currentVal === '⏸️') {
+              state[ward][docName].splice(index, 1);
+              compactRowState(ward, docName);
+            } else {
+              console.log(`[Click Debug] Click on normal item at index 0. Transitioning to progress.`);
+              state[ward][docName][index] = String(currentVal) + '_progress';
+              clearOtherWardsProgress(docName, ward);
+              notifyInitialTreatmentStart(docName, ward);
+            }
           }
           saveStateForDoctor(docName);
           updateUI();
@@ -1987,7 +1997,7 @@ function openModal(ward, docName, index) {
     });
   }
   // Send '식사' to the far right
-  etcOptions.push({ name: '⏸️', class: 'btn-pause', displayName: '<div class="pause-icon"></div>' });
+  etcOptions.push({ name: '⏸️', class: 'btn-pause', displayName: '<div class="pause-icon"></div><br><span class="arrow-subtext">일시정지</span>' });
   etcOptions.push({ name: '식사', class: 'btn-meal' });
   etcOptions.forEach(opt => {
     const btn = document.createElement('button');
@@ -2046,16 +2056,22 @@ function clearActiveSlot() {
   if (ward && docName && index !== null) {
     const clearedVal = state[ward][docName][index];
     const wasProgress = typeof clearedVal === 'string' && clearedVal.endsWith('_progress');
-    state[ward][docName].splice(index, 1);
-    compactRowState(ward, docName);
-    
-    if (wasProgress) {
-      const progressedWard = isMealTreatment(clearedVal)
-        ? null
-        : handleQueueShift(ward, docName, index, clearedVal);
-      if (progressedWard) notifyNextTreatmentStart(docName, progressedWard);
+    if (index === 0 && wasProgress && state[ward][docName][1] === '⏸️') {
+      state[ward][docName].splice(0, 2);
+      compactRowState(ward, docName);
+      console.log(`[Pause Logic] clearActiveSlot: Cleared current item and encountered pause button at index 1. Removing both and halting progress transition.`);
     } else {
-      notifyTreatmentOrderChangedForWardAndDependents(docName, ward);
+      state[ward][docName].splice(index, 1);
+      compactRowState(ward, docName);
+      
+      if (wasProgress) {
+        const progressedWard = isMealTreatment(clearedVal)
+          ? null
+          : handleQueueShift(ward, docName, index, clearedVal);
+        if (progressedWard) notifyNextTreatmentStart(docName, progressedWard);
+      } else {
+        notifyTreatmentOrderChangedForWardAndDependents(docName, ward);
+      }
     }
     
     saveStateForDoctor(docName);

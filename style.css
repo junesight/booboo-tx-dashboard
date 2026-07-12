@@ -1126,13 +1126,19 @@ body[data-active-tab="floor2"] #panel-floor2 {
   text-shadow: none;
 }
 
-/* 일시정지 - 회색 (Slate-500 #64748b) */
+/* 일시정지 - 배경 흰색, 아이콘 짙은 회색 */
 .slot.opt-pause {
-  border-color: rgba(100, 116, 139, 0.3) !important;
+  border-color: rgba(71, 85, 105, 0.3) !important;
 }
 .slot.opt-pause .slot-magnet {
-  background: #64748b !important;
-  color: #ffffff !important;
+  background: #ffffff !important;
+  color: #475569 !important;
+  font-size: 2.8rem !important; /* Large pause icon matching arrows */
+  font-weight: 800;
+  line-height: 1 !important;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 /* 식사 - 주황색 (Orange-500) */
@@ -1465,10 +1471,32 @@ body[data-active-tab="floor2"] #panel-floor2 {
 }
 
 .special-btn.btn-pause {
-  background: #64748b !important;
-  color: #ffffff !important;
-  border: 1px solid #64748b !important;
+  background: #ffffff !important;
+  color: #475569 !important; /* Dark slate grey icon */
+  border: 1px solid var(--panel-border) !important;
   opacity: 1;
+  font-size: 0.92rem; /* Match arrow container font size */
+  line-height: 0.85; /* Extremely tight line height */
+  flex-direction: column;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.special-btn.btn-pause .arrow-subtext {
+  color: var(--text-secondary);
+  margin-top: -3px !important; /* Nest closely with pause symbol */
+}
+
+.special-btn.btn-pause:hover .arrow-subtext,
+.special-btn.btn-pause.active .arrow-subtext {
+  color: #ffffff !important;
+}
+
+.special-btn.btn-pause:hover,
+.special-btn.btn-pause.active {
+  background: #788896 !important;
+  color: #ffffff !important; /* White icon when active/hovered */
 }
 
 .special-btn.btn-meal {
@@ -1519,27 +1547,39 @@ body[data-active-tab="floor2"] #panel-floor2 {
   border: 3px solid #0ea5e9 !important;
 }
 
-/* CSS Pause Icon vector drawing */
+/* CSS Pause Icon vector drawing - Perfect square outline with tight centered bars to distinguish from number 11 */
 .pause-icon {
   display: inline-flex;
-  justify-content: space-between;
-  width: 0.55em;
-  height: 0.75em;
+  justify-content: center;
+  align-items: center;
+  gap: 0.08em; /* Tight gap between the two bars */
+  width: 0.6em;
+  height: 0.6em;
   vertical-align: middle;
+  border: 0.08em solid currentColor;
+  border-radius: 0.12em;
+  padding: 0.12em;
+  box-sizing: content-box;
+  background: #cbd5e1 !important; /* Slightly darker light grey interior by default */
 }
 .pause-icon::before,
 .pause-icon::after {
   content: '';
-  width: 0.18em;
+  width: 0.15em;
   height: 100%;
   background: currentColor;
-  border-radius: 0.04em;
+  border-radius: 0.03em;
 }
 
-/* Pause button/magnet icon color (Amber yellow) */
-.slot.opt-pause .slot-magnet,
-.special-btn.btn-pause {
-  color: #fbbf24 !important;
+/* Modal Pause button hover/active: dark transparent background for white bars contrast */
+.special-btn.btn-pause:hover .pause-icon,
+.special-btn.btn-pause.active .pause-icon {
+  background: rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Pause magnet icon color (Dark slate grey by default) */
+.slot.opt-pause .slot-magnet {
+  color: #475569 !important;
 }
 
 .special-btn.btn-arrow {
@@ -2052,7 +2092,8 @@ body[data-active-tab="floor2"] #panel-floor2 {
     font-size: 0.78rem;
     margin-top: 0;
   }
-  body[data-active-tab="all"] .slot.opt-arrow .slot-magnet {
+  body[data-active-tab="all"] .slot.opt-arrow .slot-magnet,
+  body[data-active-tab="all"] .slot.opt-pause .slot-magnet {
     font-size: 2.2rem !important;
   }
 }
@@ -2374,7 +2415,8 @@ body.header-collapsed .btn-toggle-header {
     margin-top: 3px !important;
   }
 
-  body[data-active-tab="floor2"] #panel-floor2 .slot.opt-arrow .slot-magnet {
+  body[data-active-tab="floor2"] #panel-floor2 .slot.opt-arrow .slot-magnet,
+  body[data-active-tab="floor2"] #panel-floor2 .slot.opt-pause .slot-magnet {
     font-size: 3.8rem !important;
   }
 
