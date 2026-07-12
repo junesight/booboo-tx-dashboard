@@ -785,7 +785,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
 
 /* 최보빈 - Rose/Pink */
 .director-left-cell.dr-bobin, .slots-container.dr-bobin {
-  background-color: #fff1f2 !important; /* Rose-50 */
+  background-color: #ffd1d7 !important; /* Richer Rose */
   border-color: rgba(236, 72, 153, 0.15) !important;
 }
 .slots-container.dr-bobin .slot:not(.occupied) {
@@ -802,7 +802,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
 
 /* 김준현 - Sky Blue */
 .director-left-cell.dr-junhyun, .slots-container.dr-junhyun {
-  background-color: #f0f9ff !important; /* Sky-50 */
+  background-color: #cfeaff !important; /* Richer Sky */
   border-color: rgba(14, 165, 233, 0.15) !important;
 }
 .slots-container.dr-junhyun .slot:not(.occupied) {
@@ -819,7 +819,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
 
 /* 김영윤 - Yellow */
 .director-left-cell.dr-youngyun, .slots-container.dr-youngyun {
-  background-color: #fefcbf !important; /* Yellow-100 (light soft yellow) */
+  background-color: #fef08a !important; /* Richer Yellow (Yellow-200) */
   border-color: rgba(234, 179, 8, 0.15) !important;
 }
 .slots-container.dr-youngyun .slot:not(.occupied) {
@@ -836,7 +836,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
 
 /* 박지현 - Purple/Lavender */
 .director-left-cell.dr-jihyun, .slots-container.dr-jihyun {
-  background-color: #f5f3ff !important; /* Purple-50 */
+  background-color: #e6e0fa !important; /* Richer Purple */
   border-color: rgba(139, 92, 246, 0.15) !important;
 }
 .slots-container.dr-jihyun .slot:not(.occupied) {
@@ -853,7 +853,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
 
 /* 안태윤 - Sage Green/Mint */
 .director-left-cell.dr-taeyun, .slots-container.dr-taeyun {
-  background-color: #f0fdf4 !important; /* Emerald-50 */
+  background-color: #dafce3 !important; /* Richer Green */
   border-color: rgba(16, 185, 129, 0.15) !important;
 }
 .slots-container.dr-taeyun .slot:not(.occupied) {
@@ -870,7 +870,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
 
 /* 황두호 - Orange/Peach */
 .director-left-cell.dr-duho, .slots-container.dr-duho {
-  background-color: #fff7ed !important; /* Orange-50 */
+  background-color: #ffe8cc !important; /* Richer Orange */
   border-color: rgba(249, 115, 22, 0.15) !important;
 }
 .slots-container.dr-duho .slot:not(.occupied) {
