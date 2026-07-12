@@ -1509,12 +1509,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
   justify-content: center;
   align-items: center;
   font-size: 0.92rem;
-  line-height: 0.85; /* Tight line height */
-}
-
-.special-btn.btn-meal .arrow-subtext {
-  color: rgba(255, 255, 255, 0.85) !important; /* Soft white subtext */
-  margin-top: 2px !important;
+  line-height: 1.15 !important; /* Balanced line-height for equal-sized lines */
 }
 
 .special-btn.btn-divider {
