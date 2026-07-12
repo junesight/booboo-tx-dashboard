@@ -758,7 +758,7 @@ function updateUI() {
 // Update individual slot element
 function updateSlotDisplay(slotEl, val, index) {
   // Reset all classes related to value rendering
-  slotEl.classList.remove('occupied', 'opt-ultrasound', 'opt-consultation', 'opt-chuna', 'opt-diet', 'opt-divider', 'opt-arrow', 'opt-arrow-male', 'opt-arrow-female', 'opt-arrow-floor2', 'opt-arrow-floor1', 'opt-arrow-floor1-female', 'opt-arrow-floor1-male', 'opt-meal', 'opt-placenta', 'opt-bloodletting', 'opt-herbal-consult', 'opt-packet-consult', 'in-progress');
+  slotEl.classList.remove('occupied', 'opt-ultrasound', 'opt-consultation', 'opt-chuna', 'opt-diet', 'opt-divider', 'opt-pause', 'opt-arrow', 'opt-arrow-male', 'opt-arrow-female', 'opt-arrow-floor2', 'opt-arrow-floor1', 'opt-arrow-floor1-female', 'opt-arrow-floor1-male', 'opt-meal', 'opt-placenta', 'opt-bloodletting', 'opt-herbal-consult', 'opt-packet-consult', 'in-progress');
   
   if (val !== null) {
     let isProgress = false;
@@ -826,6 +826,10 @@ function updateSlotDisplay(slotEl, val, index) {
     } else if (cleanVal === '식사') {
       slotEl.classList.add('opt-meal');
       magnetClass += ' text-magnet';
+    } else if (cleanVal === '⏸️') {
+      slotEl.classList.add('opt-pause');
+      magnetClass += ' text-magnet';
+      displayVal = '<div class="pause-icon"></div>';
     } else if (cleanVal === '/') {
       slotEl.classList.add('opt-divider');
       magnetClass += ' text-magnet';
@@ -1982,10 +1986,9 @@ function openModal(ward, docName, index) {
       displayName: '<span class="arrow-symbol">▼</span><br><span class="arrow-subtext">1층 남치</span>' 
     });
   }
-
   // Send '식사' to the far right
+  etcOptions.push({ name: '⏸️', class: 'btn-pause', displayName: '<div class="pause-icon"></div>' });
   etcOptions.push({ name: '식사', class: 'btn-meal' });
-
   etcOptions.forEach(opt => {
     const btn = document.createElement('button');
     btn.className = `special-btn ${opt.class}`;

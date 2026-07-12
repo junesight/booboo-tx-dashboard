@@ -1126,6 +1126,15 @@ body[data-active-tab="floor2"] #panel-floor2 {
   text-shadow: none;
 }
 
+/* 일시정지 - 회색 (Slate-500 #64748b) */
+.slot.opt-pause {
+  border-color: rgba(100, 116, 139, 0.3) !important;
+}
+.slot.opt-pause .slot-magnet {
+  background: #64748b !important;
+  color: #ffffff !important;
+}
+
 /* 식사 - 주황색 (Orange-500) */
 .slot.opt-meal { 
   border-color: rgba(249, 115, 22, 0.3) !important; 
@@ -1405,75 +1414,92 @@ body[data-active-tab="floor2"] #panel-floor2 {
   transform: scale(1.03);
 }
 
-/* Individual Special Button states inside modal (Always colored, dim when inactive) */
+/* Individual Special Button states inside modal (Always colored, fully bright by default) */
 .special-btn.btn-consultation {
   background: #ef4444 !important;
   color: #ffffff !important;
   border: 1px solid #ef4444 !important;
-  opacity: 0.55;
+  opacity: 1;
 }
 
 .special-btn.btn-diet {
   background: #6340CD !important;
   color: #ffffff !important;
   border: 1px solid #6340CD !important;
-  opacity: 0.55;
+  opacity: 1;
 }
 
 .special-btn.btn-herbal-consult {
   background: #8f633d !important;
   color: #ffffff !important;
   border: 1px solid #8f633d !important;
-  opacity: 0.55;
+  opacity: 1;
 }
 
 .special-btn.btn-chuna {
   background: #facc15 !important;
   color: #0f172a !important;
   border: 1px solid #facc15 !important;
-  opacity: 0.55;
+  opacity: 1;
 }
 
 .special-btn.btn-ultrasound {
   background: #0f172a !important;
   color: #ffffff !important;
   border: 1px solid #0f172a !important;
-  opacity: 0.55;
+  opacity: 1;
 }
 
 .special-btn.btn-placenta {
   background: #10b981 !important;
   color: #ffffff !important;
   border: 1px solid #10b981 !important;
-  opacity: 0.55;
+  opacity: 1;
 }
 
 .special-btn.btn-bloodletting {
   background: #ec4899 !important;
   color: #ffffff !important;
   border: 1px solid #ec4899 !important;
-  opacity: 0.55;
+  opacity: 1;
+}
+
+.special-btn.btn-pause {
+  background: #64748b !important;
+  color: #ffffff !important;
+  border: 1px solid #64748b !important;
+  opacity: 1;
 }
 
 .special-btn.btn-meal {
   background: #f97316 !important;
   color: #ffffff !important;
   border: 1px solid #f97316 !important;
-  opacity: 0.55;
+  opacity: 1;
 }
 
 .special-btn.btn-divider {
   background: #cbd5e1 !important;
   color: #0f172a !important;
   border: 1px solid #cbd5e1 !important;
-  opacity: 0.55;
+  opacity: 1;
 }
 
-/* Active or Hovered states - Fully bright, thick border highlight, slight scale up */
-.special-btn:hover,
+/* Hover state - Dimmed slightly (semi-transparent), slight scale up */
+.special-btn:hover {
+  opacity: 0.65 !important;
+  transform: scale(1.04) !important;
+}
+
+/* Selected/Active state - Fully bright/opaque, slight scale up */
 .special-btn.active {
   opacity: 1 !important;
   transform: scale(1.04) !important;
+}
+
+/* Selected/Active state hovered - Keep fully bright */
+.special-btn.active:hover {
+  opacity: 1 !important;
 }
 
 .special-btn.btn-consultation:hover, .special-btn.btn-consultation.active,
@@ -1482,6 +1508,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
 .special-btn.btn-chuna:hover, .special-btn.btn-chuna.active,
 .special-btn.btn-placenta:hover, .special-btn.btn-placenta.active,
 .special-btn.btn-bloodletting:hover, .special-btn.btn-bloodletting.active,
+.special-btn.btn-pause:hover, .special-btn.btn-pause.active,
 .special-btn.btn-meal:hover, .special-btn.btn-meal.active,
 .special-btn.btn-divider:hover, .special-btn.btn-divider.active {
   border: 3px solid #000000 !important;
@@ -1490,6 +1517,29 @@ body[data-active-tab="floor2"] #panel-floor2 {
 /* Exception: For ultrasound (black background), a vivid sky-blue border stands out much better! */
 .special-btn.btn-ultrasound:hover, .special-btn.btn-ultrasound.active {
   border: 3px solid #0ea5e9 !important;
+}
+
+/* CSS Pause Icon vector drawing */
+.pause-icon {
+  display: inline-flex;
+  justify-content: space-between;
+  width: 0.55em;
+  height: 0.75em;
+  vertical-align: middle;
+}
+.pause-icon::before,
+.pause-icon::after {
+  content: '';
+  width: 0.18em;
+  height: 100%;
+  background: currentColor;
+  border-radius: 0.04em;
+}
+
+/* Pause button/magnet icon color (Amber yellow) */
+.slot.opt-pause .slot-magnet,
+.special-btn.btn-pause {
+  color: #fbbf24 !important;
 }
 
 .special-btn.btn-arrow {
