@@ -964,7 +964,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2.45rem; /* Maximize black number size */
+  font-size: 2.9rem; /* Maximize black number size */
   font-weight: 800;
   color: #000000; /* Pure black text */
   background: #ffffff; /* White background circle */
@@ -1882,7 +1882,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
     max-height: 72px !important;
   }
   body[data-active-tab="all"] .slot-magnet {
-    font-size: 2.15rem;
+    font-size: 2.5rem;
     border-width: 4px;
   }
   body[data-active-tab="all"] .slot-magnet.text-magnet {
@@ -2201,7 +2201,7 @@ body.header-collapsed .btn-toggle-header {
   }
 
   body[data-active-tab="floor2"] #panel-floor2 .slot-magnet {
-    font-size: 3.6rem !important;
+    font-size: 4.2rem !important;
     border-width: 6px !important;
   }
 
