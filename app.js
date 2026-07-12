@@ -826,7 +826,7 @@ function updateSlotDisplay(slotEl, val, index) {
     } else if (cleanVal === '식사') {
       slotEl.classList.add('opt-meal');
       magnetClass += ' text-magnet';
-      displayVal = '식사<br>휴식';
+      displayVal = '🍱';
     } else if (cleanVal === '⏸️') {
       slotEl.classList.add('opt-pause');
       magnetClass += ' text-magnet';
@@ -1983,39 +1983,39 @@ function openModal(ward, docName, index) {
     etcOptions.push({ 
       name: '▶', 
       class: 'btn-arrow btn-arrow-male', 
-      displayName: '<span class="arrow-symbol">▶</span><br><span class="arrow-subtext">남치</span>' 
+      displayName: '<span class="arrow-symbol">▶</span><span class="arrow-subtext">남치</span>' 
     });
     etcOptions.push({ 
       name: '▲', 
       class: 'btn-arrow btn-arrow-floor2', 
-      displayName: '<span class="arrow-symbol">▲</span><br><span class="arrow-subtext">2층</span>' 
+      displayName: '<span class="arrow-symbol">▲</span><span class="arrow-subtext">2층</span>' 
     });
   } else if (ward === 'male') {
     etcOptions.push({ 
       name: '◀', 
       class: 'btn-arrow btn-arrow-female', 
-      displayName: '<span class="arrow-symbol">◀</span><br><span class="arrow-subtext">여치</span>' 
+      displayName: '<span class="arrow-symbol">◀</span><span class="arrow-subtext">여치</span>' 
     });
     etcOptions.push({ 
       name: '▲', 
       class: 'btn-arrow btn-arrow-floor2', 
-      displayName: '<span class="arrow-symbol">▲</span><br><span class="arrow-subtext">2층</span>' 
+      displayName: '<span class="arrow-symbol">▲</span><span class="arrow-subtext">2층</span>' 
     });
   } else if (ward === 'secondFloor') {
     etcOptions.push({ 
       name: '▼여', 
       class: 'btn-arrow btn-arrow-floor1-female', 
-      displayName: '<span class="arrow-symbol">▼</span><br><span class="arrow-subtext">1층 여치</span>' 
+      displayName: '<span class="arrow-symbol">▼</span><span class="arrow-subtext">1층 여치</span>' 
     });
     etcOptions.push({ 
       name: '▼남', 
       class: 'btn-arrow btn-arrow-floor1-male', 
-      displayName: '<span class="arrow-symbol">▼</span><br><span class="arrow-subtext">1층 남치</span>' 
+      displayName: '<span class="arrow-symbol">▼</span><span class="arrow-subtext">1층 남치</span>' 
     });
   }
   // Send '식사' to the far right
-  etcOptions.push({ name: '⏸️', class: 'btn-pause', displayName: '<div class="pause-icon"></div><br><span class="arrow-subtext">일시정지</span>' });
-  etcOptions.push({ name: '식사', class: 'btn-meal', displayName: '식사<br>휴식' });
+  etcOptions.push({ name: '⏸️', class: 'btn-pause', displayName: '<span class="arrow-symbol"><div class="pause-icon"></div></span><span class="arrow-subtext">일시정지</span>' });
+  etcOptions.push({ name: '식사', class: 'btn-meal', displayName: '<span class="arrow-symbol">🍱</span><span class="arrow-subtext">식사/휴식</span>' });
   etcOptions.forEach(opt => {
     const btn = document.createElement('button');
     btn.className = `special-btn ${opt.class}`;

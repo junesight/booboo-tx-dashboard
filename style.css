@@ -1142,13 +1142,19 @@ body[data-active-tab="floor2"] #panel-floor2 {
 }
 
 /* 식사 - 주황색 (Orange-500) */
+/* 식사 - 주황색 제거, 흰색 배경에 검정색 글씨 */
 .slot.opt-meal { 
-  border-color: rgba(249, 115, 22, 0.3) !important; 
+  border-color: var(--panel-border) !important; 
 }
 .slot.opt-meal .slot-magnet {
-  background: #f97316;
-  color: #ffffff;
-  line-height: 1.05 !important;
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid var(--panel-border) !important;
+  font-size: 2.8rem !important; /* Large emoji matching arrows/pause size */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  line-height: 1 !important;
 }
 
 /* 화살표 - 밝은 회색 배경 사각형 박스에 흰색 화살표 및 subtext */
@@ -1229,10 +1235,12 @@ body[data-active-tab="floor2"] #panel-floor2 {
     font-size: 0.95rem !important;
   }
   .slot.opt-placenta .slot-magnet,
-  .slot.opt-herbal-consult .slot-magnet,
-  .slot.opt-meal .slot-magnet {
+  .slot.opt-herbal-consult .slot-magnet {
     font-size: 0.85rem !important;
     line-height: 1.05 !important;
+  }
+  .slot.opt-meal .slot-magnet {
+    font-size: 2.2rem !important;
   }
 }
 
@@ -1241,10 +1249,12 @@ body[data-active-tab="floor2"] #panel-floor2 {
     font-size: 0.82rem !important;
   }
   .slot.opt-placenta .slot-magnet,
-  .slot.opt-herbal-consult .slot-magnet,
-  .slot.opt-meal .slot-magnet {
+  .slot.opt-herbal-consult .slot-magnet {
     font-size: 0.72rem !important;
     line-height: 1.0 !important;
+  }
+  .slot.opt-meal .slot-magnet {
+    font-size: 1.8rem !important;
   }
 }
 
@@ -1414,9 +1424,11 @@ body[data-active-tab="floor2"] #panel-floor2 {
   transition: all 0.15s ease;
   text-align: center;
   display: flex;
+  flex-direction: column; /* Stack elements vertically */
   align-items: center;
   justify-content: center;
-  line-height: 1.2;
+  gap: 6px !important; /* Uniform gap between icon and text */
+  line-height: 1 !important;
 }
 
 .special-btn:hover {
@@ -1478,41 +1490,13 @@ body[data-active-tab="floor2"] #panel-floor2 {
   color: #475569 !important; /* Dark slate grey icon */
   border: 1px solid var(--panel-border) !important;
   opacity: 1;
-  font-size: 0.92rem; /* Match arrow container font size */
-  line-height: 0.85; /* Extremely tight line height */
-  flex-direction: column;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.special-btn.btn-pause .arrow-subtext {
-  color: var(--text-secondary);
-  margin-top: -3px !important; /* Nest closely with pause symbol */
-}
-
-.special-btn.btn-pause:hover .arrow-subtext,
-.special-btn.btn-pause.active .arrow-subtext {
-  color: #ffffff !important;
-}
-
-.special-btn.btn-pause:hover,
-.special-btn.btn-pause.active {
-  background: #788896 !important;
-  color: #ffffff !important; /* White icon when active/hovered */
 }
 
 .special-btn.btn-meal {
-  background: #f97316 !important;
-  color: #ffffff !important;
-  border: 1px solid #f97316 !important;
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid var(--panel-border) !important;
   opacity: 1;
-  flex-direction: column;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 0.92rem;
-  line-height: 1.15 !important; /* Balanced line-height for equal-sized lines */
 }
 
 .special-btn.btn-divider {
@@ -1592,33 +1576,41 @@ body[data-active-tab="floor2"] #panel-floor2 {
 }
 
 .special-btn.btn-arrow {
-  font-size: 0.92rem; /* Match other special buttons font size */
-  line-height: 0.85; /* Extremely tight line height */
-  flex-direction: column;
   background: #f8fafc;
   color: var(--text-secondary);
   border: 1px solid var(--panel-border);
 }
 
-.special-btn.btn-arrow .arrow-symbol {
-  font-size: 1.5rem; /* Set arrow icon size specifically */
+/* Unified styling for symbols and text labels inside ALL special buttons (Arrows, Pause, Bento) */
+.special-btn .arrow-symbol {
+  font-size: 1.5rem !important; /* Forces same size for all icons */
   font-weight: 800;
-  display: inline-block;
-  margin-bottom: 0px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  line-height: 1 !important;
+  height: 1.5rem; /* Ensure consistent bounding box */
 }
 
-.special-btn.btn-arrow .arrow-subtext {
-  color: var(--text-secondary);
-  margin-top: -3px !important; /* Pull text upward to nest closely with symbol */
+.special-btn .arrow-subtext {
+  font-size: 0.78rem !important; /* Forces same text size for all labels */
+  font-weight: 500 !important;
+  color: #000000 !important; /* Forces all special button labels to be black! */
+  line-height: 1 !important;
+  margin-top: 0 !important; /* Gap defines spacing */
 }
 
-.special-btn.btn-arrow:hover, .special-btn.btn-arrow.active {
+.special-btn.btn-arrow:hover, .special-btn.btn-arrow.active,
+.special-btn.btn-pause:hover, .special-btn.btn-pause.active,
+.special-btn.btn-meal:hover, .special-btn.btn-meal.active {
   background: #788896 !important;
+  color: #ffffff !important;
   border: 3px solid #000000 !important;
 }
 
-.special-btn.btn-arrow:hover .arrow-subtext,
-.special-btn.btn-arrow.active .arrow-subtext {
+/* Global hover/active text color for all special buttons */
+.special-btn:hover .arrow-subtext,
+.special-btn.active .arrow-subtext {
   color: #ffffff !important;
 }
 
@@ -2102,7 +2094,8 @@ body[data-active-tab="floor2"] #panel-floor2 {
     margin-top: 0;
   }
   body[data-active-tab="all"] .slot.opt-arrow .slot-magnet,
-  body[data-active-tab="all"] .slot.opt-pause .slot-magnet {
+  body[data-active-tab="all"] .slot.opt-pause .slot-magnet,
+  body[data-active-tab="all"] .slot.opt-meal .slot-magnet {
     font-size: 2.2rem !important;
   }
 }
@@ -2425,7 +2418,8 @@ body.header-collapsed .btn-toggle-header {
   }
 
   body[data-active-tab="floor2"] #panel-floor2 .slot.opt-arrow .slot-magnet,
-  body[data-active-tab="floor2"] #panel-floor2 .slot.opt-pause .slot-magnet {
+  body[data-active-tab="floor2"] #panel-floor2 .slot.opt-pause .slot-magnet,
+  body[data-active-tab="floor2"] #panel-floor2 .slot.opt-meal .slot-magnet {
     font-size: 3.8rem !important;
   }
 
