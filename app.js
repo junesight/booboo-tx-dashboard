@@ -2014,7 +2014,7 @@ function openModal(ward, docName, index) {
   }
   // Send '식사' to the far right
   etcOptions.push({ name: '⏸️', class: 'btn-pause', displayName: '<div class="pause-icon"></div><br><span class="arrow-subtext">일시정지</span>' });
-  etcOptions.push({ name: '식사', class: 'btn-meal' });
+  etcOptions.push({ name: '식사', class: 'btn-meal', displayName: '식사<br><span class="arrow-subtext">휴식</span>' });
   etcOptions.forEach(opt => {
     const btn = document.createElement('button');
     btn.className = `special-btn ${opt.class}`;
