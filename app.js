@@ -1016,8 +1016,24 @@ function getTreatmentNotificationStorage() {
 
 function hasRecentTreatmentNotification(payload) {
   const saved = getTreatmentNotificationStorage();
+  if (!saved) return false;
+
   const duplicateWindowMs = 15000;
-  return Boolean(saved && saved.eventKey === payload.eventKey && Date.now() - saved.sentAt < duplicateWindowMs);
+  // 1. Prevent duplicate sends of the exact same event key (15s window)
+  if (saved.eventKey === payload.eventKey && Date.now() - saved.sentAt < duplicateWindowMs) {
+    return true;
+  }
+
+  // 2. Rate-limit: Prevent rapid consecutive sends for the same doctor within 5 seconds
+  const doctorCooldownMs = 5000;
+  const parts = saved.eventKey.split('|');
+  const savedDoc = parts[1]; // eventKey format: notificationType|docName|ward|...
+  if (savedDoc === payload.doctorName && Date.now() - saved.sentAt < doctorCooldownMs) {
+    console.warn(`[Slack Rate Limit] Throttled rapid notification for ${payload.doctorName}. (Diff: ${Date.now() - saved.sentAt}ms)`);
+    return true;
+  }
+
+  return false;
 }
 
 function markTreatmentNotificationSent(payload) {
