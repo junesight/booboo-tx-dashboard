@@ -1,3 +1,5 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -116,6 +118,94 @@ Deno.serve(async (req) => {
   if (!body.currentTreatment) {
     return jsonResponse({ ok: false, error: 'missing_current_treatment' }, 400);
   }
+
+  // ----------------- Atomic Concurrency Control (Compare-And-Swap) -----------------
+  const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  const eventKey = body.eventKey || `${body.notificationType || 'progress-followup'}|${body.doctorName}|${body.ward || 'none'}|${body.currentTreatment}`;
+
+  let lastNotification = null;
+  let lockRowExists = false;
+
+  try {
+    const { data: lockRow, error: fetchError } = await supabase
+      .from('clinic_state')
+      .select('data')
+      .eq('id', 'slack_notification_lock')
+      .maybeSingle();
+
+    if (fetchError) {
+      console.error('Fetch lock row error:', fetchError);
+    } else if (lockRow) {
+      lastNotification = lockRow.data;
+      lockRowExists = true;
+    }
+  } catch (e) {
+    console.error('Fetch lock row exception:', e);
+  }
+
+  const now = Date.now();
+  if (lastNotification) {
+    // Throttling criteria:
+    // 1. Prevent duplicate sends of the exact same event key (15s window)
+    const isDuplicate = lastNotification.eventKey === eventKey && 
+      (now - lastNotification.sentAt < 15000);
+
+    // 2. Cooldown: Prevent rapid consecutive sends for the same doctor (5s window)
+    const isCooldown = lastNotification.doctorName === body.doctorName && 
+      (now - lastNotification.sentAt < 5000);
+
+    if (isDuplicate || isCooldown) {
+      console.warn(`[Edge Throttling] Blocked concurrent Slack send for ${body.doctorName} (eventKey: ${eventKey}).`);
+      return jsonResponse({ ok: false, error: 'throttled' });
+    }
+  }
+
+  const lockData = {
+    eventKey,
+    doctorName: body.doctorName,
+    sentAt: now
+  };
+
+  let writeSuccess = false;
+  try {
+    if (!lockRowExists) {
+      const { data: insertData, error: insertError } = await supabase
+        .from('clinic_state')
+        .insert({
+          id: 'slack_notification_lock',
+          data: lockData
+        })
+        .select();
+
+      if (!insertError && insertData && insertData.length > 0) {
+        writeSuccess = true;
+      }
+    } else {
+      const { data: updateData, error: updateError } = await supabase
+        .from('clinic_state')
+        .update({
+          data: lockData
+        })
+        .eq('id', 'slack_notification_lock')
+        .filter('data->>sentAt', 'eq', String(lastNotification.sentAt))
+        .select();
+
+      if (!updateError && updateData && updateData.length > 0) {
+        writeSuccess = true;
+      }
+    }
+  } catch (e) {
+    console.error('Lock write exception:', e);
+  }
+
+  if (!writeSuccess) {
+    console.warn(`[Edge CAS] Lock update/insert failed. Throttling Slack send.`);
+    return jsonResponse({ ok: false, error: 'throttled' });
+  }
+  // ---------------------------------------------------------------------------------
 
   const notificationType = body.notificationType || 'progress-followup';
   const nextText = body.nextTreatment
