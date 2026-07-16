@@ -1821,8 +1821,14 @@ function openModal(ward, docName, index) {
   
   // Collect all assigned numbers in the current ward to prevent duplicates
   const assignedNumbers = new Set();
-  const availableDoctors = ['최보빈', '김준현', '김영윤', '박지현', '안태윤', '황두호'];
-  availableDoctors.forEach(d => {
+  
+  // Only loop through doctors currently displayed on the board for this ward
+  const activeDocs = ward === 'secondFloor' 
+    ? Object.values(renderDirectorsFloor2) 
+    : Object.values(renderDirectorsFloor1);
+
+  activeDocs.forEach(d => {
+    if (!d || !state[ward][d]) return;
     state[ward][d].forEach(val => {
       if (val !== null && val !== undefined) {
         let cleanVal = val;
