@@ -972,6 +972,45 @@ body[data-active-tab="floor2"] #panel-floor2 {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12); /* Soft shadow for 3D magnet look */
 }
 
+/* Elapsed Time Badge on Slots */
+.slot-elapsed-time {
+  position: absolute;
+  bottom: 8%;
+  right: 12%;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: currentColor;
+  opacity: 0.6;
+  pointer-events: none;
+  line-height: 1;
+  font-family: 'Outfit', sans-serif;
+  text-shadow: none; /* Keep number clean */
+}
+
+@container (max-width: 55px) {
+  .slot-elapsed-time {
+    font-size: 0.55rem;
+    bottom: 6%;
+    right: 10%;
+  }
+}
+
+@container (max-width: 45px) {
+  .slot-elapsed-time {
+    font-size: 0.48rem;
+    bottom: 4%;
+    right: 8%;
+  }
+}
+
+@container (min-width: 90px) {
+  .slot-elapsed-time {
+    font-size: 1rem;
+    bottom: 10%;
+    right: 14%;
+  }
+}
+
 /* In-Progress (진행중) Magnet State & Animations */
 .slot-magnet.in-progress {
   animation: progressPulse 1.4s infinite ease-in-out;

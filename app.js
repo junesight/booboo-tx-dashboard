@@ -7,6 +7,7 @@ const SLACK_NOTIFY_FUNCTION = 'notify-slack-treatment';
 let supabaseChannel = null;
 const INITIAL_TREATMENT_FOLLOWUP_DELAY_MS = 3 * 60 * 1000;
 const treatmentNotificationTimers = {};
+let entryTimes = {};
 
 // Connection Status Indicator Updater
 function updateConnectionStatus(status) {
@@ -236,6 +237,17 @@ function loadStateFromLocalStorage() {
       console.error('Error parsing saved off-duty state:', e);
     }
   }
+
+  // Load entry times
+  const savedEntryTimes = localStorage.getItem('clinic_entry_times');
+  if (savedEntryTimes) {
+    try {
+      const parsed = JSON.parse(savedEntryTimes);
+      Object.assign(entryTimes, parsed);
+    } catch (e) {
+      console.error('Error parsing saved entry times:', e);
+    }
+  }
 }
 
 // Load state from Supabase or localStorage on init
@@ -258,6 +270,7 @@ async function initApp() {
         if (dbData.offDutyDirectors) Object.assign(offDutyDirectors, dbData.offDutyDirectors);
         if (dbData.rowDirectorsFloor1) Object.assign(rowDirectorsFloor1, dbData.rowDirectorsFloor1);
         if (dbData.rowDirectorsFloor2) Object.assign(rowDirectorsFloor2, dbData.rowDirectorsFloor2);
+        if (dbData.entryTimes) Object.assign(entryTimes, dbData.entryTimes);
       } else {
         console.warn('Could not fetch state from Supabase, falling back to localStorage:', error);
         loadStateFromLocalStorage();
@@ -360,6 +373,7 @@ function setupSupabaseRealtime() {
           if (newData.offDutyDirectors) Object.assign(offDutyDirectors, newData.offDutyDirectors);
           if (newData.rowDirectorsFloor1) Object.assign(rowDirectorsFloor1, newData.rowDirectorsFloor1);
           if (newData.rowDirectorsFloor2) Object.assign(rowDirectorsFloor2, newData.rowDirectorsFloor2);
+          if (newData.entryTimes) Object.assign(entryTimes, newData.entryTimes);
           
           sanitizeState(false);
           updateUI();
@@ -385,13 +399,51 @@ function setupSupabaseRealtime() {
   });
 }
 
+// Synchronize and maintain timestamps when slots first entered the board
+function maintainEntryTimes() {
+  const currentKeys = new Set();
+  const wards = ['female', 'male', 'secondFloor'];
+  const availableDoctors = ['최보빈', '김준현', '김영윤', '박지현', '안태윤', '황두호'];
+  
+  wards.forEach(ward => {
+    availableDoctors.forEach(docName => {
+      const arr = state[ward]?.[docName];
+      if (Array.isArray(arr)) {
+        arr.forEach(val => {
+          if (val !== null && val !== undefined && val !== '') {
+            let cleanVal = val;
+            if (typeof val === 'string' && val.endsWith('_progress')) {
+              cleanVal = val.substring(0, val.length - 9);
+            }
+            const key = `${ward}|${docName}|${cleanVal}`;
+            currentKeys.add(key);
+            
+            if (!entryTimes[key]) {
+              entryTimes[key] = Date.now();
+            }
+          }
+        });
+      }
+    });
+  });
+  
+  // Clean up stale entry times
+  Object.keys(entryTimes).forEach(key => {
+    if (!currentKeys.has(key)) {
+      delete entryTimes[key];
+    }
+  });
+}
+
 // Save current state to localStorage and Supabase
 async function saveState() {
+  maintainEntryTimes();
   localStorage.setItem('clinic_treatment_state', JSON.stringify(state));
   localStorage.setItem('clinic_leave_times', JSON.stringify(leaveTimes));
   localStorage.setItem('clinic_off_duty_directors', JSON.stringify(offDutyDirectors));
   localStorage.setItem('clinic_row_directors_floor1', JSON.stringify(rowDirectorsFloor1));
   localStorage.setItem('clinic_row_directors_floor2', JSON.stringify(rowDirectorsFloor2));
+  localStorage.setItem('clinic_entry_times', JSON.stringify(entryTimes));
 
   if (supabaseClient) {
     try {
@@ -404,7 +456,8 @@ async function saveState() {
             leaveTimes,
             offDutyDirectors,
             rowDirectorsFloor1,
-            rowDirectorsFloor2
+            rowDirectorsFloor2,
+            entryTimes
           },
           updated_at: new Date().toISOString()
         });
@@ -419,22 +472,23 @@ async function saveState() {
 
 // Save a single JSONB field path to Supabase atomically via RPC
 async function saveStateField(path, value) {
+  maintainEntryTimes();
   localStorage.setItem('clinic_treatment_state', JSON.stringify(state));
   localStorage.setItem('clinic_leave_times', JSON.stringify(leaveTimes));
   localStorage.setItem('clinic_off_duty_directors', JSON.stringify(offDutyDirectors));
   localStorage.setItem('clinic_row_directors_floor1', JSON.stringify(rowDirectorsFloor1));
   localStorage.setItem('clinic_row_directors_floor2', JSON.stringify(rowDirectorsFloor2));
+  localStorage.setItem('clinic_entry_times', JSON.stringify(entryTimes));
 
   if (supabaseClient) {
     try {
-      const { error } = await supabaseClient
-        .rpc('update_clinic_state_field', {
-          p_path: path,
-          p_value: value
-        });
-      if (error) {
-        console.error(`Error saving field ${path.join('.')} to Supabase:`, error);
-        // Fallback: If RPC not found (PGRST202) or any other DB error, use full upsert saveState()
+      const results = await Promise.all([
+        supabaseClient.rpc('update_clinic_state_field', { p_path: path, p_value: value }),
+        supabaseClient.rpc('update_clinic_state_field', { p_path: ['entryTimes'], p_value: entryTimes })
+      ]);
+      const hasError = results.some(res => res.error);
+      if (hasError) {
+        console.error(`Error saving field ${path.join('.')} to Supabase:`, results);
         console.warn('Falling back to full saveState() due to RPC failure.');
         saveState();
       }
@@ -447,13 +501,16 @@ async function saveStateField(path, value) {
 
 // Save all ward states for a specific doctor atomically
 async function saveStateForDoctor(docName) {
+  maintainEntryTimes();
   localStorage.setItem('clinic_treatment_state', JSON.stringify(state));
+  localStorage.setItem('clinic_entry_times', JSON.stringify(entryTimes));
   if (supabaseClient) {
     try {
       const results = await Promise.all([
         supabaseClient.rpc('update_clinic_state_field', { p_path: ['state', 'female', docName], p_value: state.female[docName] || [] }),
         supabaseClient.rpc('update_clinic_state_field', { p_path: ['state', 'male', docName], p_value: state.male[docName] || [] }),
-        supabaseClient.rpc('update_clinic_state_field', { p_path: ['state', 'secondFloor', docName], p_value: state.secondFloor[docName] || [] })
+        supabaseClient.rpc('update_clinic_state_field', { p_path: ['state', 'secondFloor', docName], p_value: state.secondFloor[docName] || [] }),
+        supabaseClient.rpc('update_clinic_state_field', { p_path: ['entryTimes'], p_value: entryTimes })
       ]);
       const hasError = results.some(res => res.error);
       if (hasError) {
@@ -480,6 +537,7 @@ function compactRowState(ward, docName) {
 
 // Sanitize state by removing _progress suffix from slots at index >= 1
 function sanitizeState(shouldSave = true) {
+  maintainEntryTimes();
   const wards = ['female', 'male', 'secondFloor'];
   let modified = false;
   
@@ -767,6 +825,7 @@ function updateSlotDisplay(slotEl, val, index) {
       isProgress = true;
       cleanVal = val.substring(0, val.length - 9);
     }
+    const lookupVal = cleanVal;
 
     let isBloodletting = false;
     if (typeof cleanVal === 'string' && cleanVal.startsWith('사혈_')) {
@@ -858,7 +917,21 @@ function updateSlotDisplay(slotEl, val, index) {
       }
     }
     
-    slotEl.innerHTML = `<div class="${magnetClass}" draggable="true">${displayVal}</div>`;
+    // Render the elapsed time badge if applicable
+    const docName = slotEl.dataset.doc;
+    const ward = slotEl.dataset.ward;
+    const isArrow = (v) => ['▶','◀','▲','▼','▼여','▼남','➡️','⬅️','⬆️','⬇️','→','←','↑','↓'].includes(v);
+    const shouldShowTime = lookupVal !== '/' && lookupVal !== '⏸️' && !isArrow(lookupVal);
+    
+    let elapsedBadgeHtml = '';
+    if (shouldShowTime && docName && ward) {
+      const key = `${ward}|${docName}|${lookupVal}`;
+      const startTime = entryTimes[key];
+      const elapsedMins = startTime ? Math.max(0, Math.floor((Date.now() - startTime) / (60 * 1000))) : 0;
+      elapsedBadgeHtml = `<span class="slot-elapsed-time" data-key="${key}">${elapsedMins}</span>`;
+    }
+
+    slotEl.innerHTML = `<div class="${magnetClass}" draggable="true">${displayVal}${elapsedBadgeHtml}</div>`;
     
   } else {
     slotEl.innerHTML = '';
@@ -2155,6 +2228,20 @@ function isWeekendOrHoliday(dateObj) {
   return false;
 }
 
+// Update elapsed times on the board dynamically without rebuilding slots
+function updateElapsedTimesDisplay() {
+  const badges = document.querySelectorAll('.slot-elapsed-time');
+  badges.forEach(badge => {
+    const key = badge.dataset.key;
+    const startTime = entryTimes[key];
+    if (startTime) {
+      const diffMs = Date.now() - startTime;
+      const mins = Math.floor(diffMs / (60 * 1000));
+      badge.textContent = Math.max(0, mins);
+    }
+  });
+}
+
 // Start Clock
 function startClock() {
   function tick() {
@@ -2178,6 +2265,9 @@ function startClock() {
     const seconds = String(now.getSeconds()).padStart(2, '0');
     
     liveClockEl.textContent = `${year}년 ${month}월 ${date}일 (${day}) ${ampm} ${formattedHours}:${minutes}:${seconds}`;
+    
+    // Dynamically update elapsed minutes badges
+    updateElapsedTimesDisplay();
   }
   
   tick();
@@ -2308,6 +2398,7 @@ async function pullStateFromSupabase() {
       if (dbData.offDutyDirectors) Object.assign(offDutyDirectors, dbData.offDutyDirectors);
       if (dbData.rowDirectorsFloor1) Object.assign(rowDirectorsFloor1, dbData.rowDirectorsFloor1);
       if (dbData.rowDirectorsFloor2) Object.assign(rowDirectorsFloor2, dbData.rowDirectorsFloor2);
+      if (dbData.entryTimes) Object.assign(entryTimes, dbData.entryTimes);
       
       // Normalize values
       const wards = ['female', 'male', 'secondFloor'];
