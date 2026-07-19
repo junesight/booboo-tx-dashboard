@@ -1542,8 +1542,10 @@ function setupEventListeners() {
       const panel = dirTag.closest('.board-panel');
       const isFloor1 = panel.id === 'panel-floor1';
       const row = parseInt(dirTag.dataset.row, 10);
-      const docName = isFloor1 ? rowDirectorsFloor1[row] : rowDirectorsFloor2[row];
-      openDirectorModal(docName, isFloor1 ? 1 : 2, row);
+      const docName = isFloor1 ? renderDirectorsFloor1[row] : renderDirectorsFloor2[row];
+      const directors = isFloor1 ? rowDirectorsFloor1 : rowDirectorsFloor2;
+      const dbRow = parseInt(Object.keys(directors).find(k => directors[k] === docName), 10);
+      openDirectorModal(docName, isFloor1 ? 1 : 2, !isNaN(dbRow) ? dbRow : row);
     }
 
     const leaveBtn = e.target.closest('.leave-time-btn');
@@ -1551,7 +1553,7 @@ function setupEventListeners() {
       const panel = leaveBtn.closest('.board-panel');
       const isFloor1 = panel.id === 'panel-floor1';
       const row = parseInt(leaveBtn.dataset.row, 10);
-      const docName = isFloor1 ? rowDirectorsFloor1[row] : rowDirectorsFloor2[row];
+      const docName = isFloor1 ? renderDirectorsFloor1[row] : renderDirectorsFloor2[row];
       openLeaveTimeModal(docName);
     }
   });
