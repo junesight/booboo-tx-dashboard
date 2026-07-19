@@ -988,6 +988,11 @@ body[data-active-tab="floor2"] #panel-floor2 {
   text-shadow: none; /* Keep number clean */
 }
 
+/* Position elapsed time slightly lower inside circular bed number magnets */
+.slot-magnet:not(.text-magnet) .slot-elapsed-time {
+  bottom: 4.5%;
+}
+
 .slot-progress-time {
   position: absolute;
   top: 8%;
@@ -1008,6 +1013,9 @@ body[data-active-tab="floor2"] #panel-floor2 {
     font-size: 0.55rem;
     bottom: 6%;
   }
+  .slot-magnet:not(.text-magnet) .slot-elapsed-time {
+    bottom: 3.5%;
+  }
   .slot-progress-time {
     font-size: 0.55rem;
     top: 6%;
@@ -1019,6 +1027,9 @@ body[data-active-tab="floor2"] #panel-floor2 {
     font-size: 0.48rem;
     bottom: 4%;
   }
+  .slot-magnet:not(.text-magnet) .slot-elapsed-time {
+    bottom: 2%;
+  }
   .slot-progress-time {
     font-size: 0.48rem;
     top: 4%;
@@ -1029,6 +1040,9 @@ body[data-active-tab="floor2"] #panel-floor2 {
   .slot-elapsed-time {
     font-size: 1rem;
     bottom: 10%;
+  }
+  .slot-magnet:not(.text-magnet) .slot-elapsed-time {
+    bottom: 6%;
   }
   .slot-progress-time {
     font-size: 1rem;
