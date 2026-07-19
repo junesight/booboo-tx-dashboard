@@ -987,11 +987,30 @@ body[data-active-tab="floor2"] #panel-floor2 {
   text-shadow: none; /* Keep number clean */
 }
 
+.slot-progress-time {
+  position: absolute;
+  top: 8%;
+  left: 12%;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: currentColor;
+  opacity: 0.6;
+  pointer-events: none;
+  line-height: 1;
+  font-family: 'Outfit', sans-serif;
+  text-shadow: none; /* Keep number clean */
+}
+
 @container (max-width: 55px) {
   .slot-elapsed-time {
     font-size: 0.55rem;
     bottom: 6%;
     right: 10%;
+  }
+  .slot-progress-time {
+    font-size: 0.55rem;
+    top: 6%;
+    left: 10%;
   }
 }
 
@@ -1001,6 +1020,11 @@ body[data-active-tab="floor2"] #panel-floor2 {
     bottom: 4%;
     right: 8%;
   }
+  .slot-progress-time {
+    font-size: 0.48rem;
+    top: 4%;
+    left: 8%;
+  }
 }
 
 @container (min-width: 90px) {
@@ -1008,6 +1032,11 @@ body[data-active-tab="floor2"] #panel-floor2 {
     font-size: 1rem;
     bottom: 10%;
     right: 14%;
+  }
+  .slot-progress-time {
+    font-size: 1rem;
+    top: 10%;
+    left: 14%;
   }
 }
 

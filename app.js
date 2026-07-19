@@ -8,6 +8,7 @@ let supabaseChannel = null;
 const INITIAL_TREATMENT_FOLLOWUP_DELAY_MS = 3 * 60 * 1000;
 const treatmentNotificationTimers = {};
 let entryTimes = {};
+let progressTimes = {};
 
 // Connection Status Indicator Updater
 function updateConnectionStatus(status) {
@@ -248,6 +249,17 @@ function loadStateFromLocalStorage() {
       console.error('Error parsing saved entry times:', e);
     }
   }
+
+  // Load progress times
+  const savedProgressTimes = localStorage.getItem('clinic_progress_times');
+  if (savedProgressTimes) {
+    try {
+      const parsed = JSON.parse(savedProgressTimes);
+      Object.assign(progressTimes, parsed);
+    } catch (e) {
+      console.error('Error parsing saved progress times:', e);
+    }
+  }
 }
 
 // Load state from Supabase or localStorage on init
@@ -271,6 +283,7 @@ async function initApp() {
         if (dbData.rowDirectorsFloor1) Object.assign(rowDirectorsFloor1, dbData.rowDirectorsFloor1);
         if (dbData.rowDirectorsFloor2) Object.assign(rowDirectorsFloor2, dbData.rowDirectorsFloor2);
         if (dbData.entryTimes) Object.assign(entryTimes, dbData.entryTimes);
+        if (dbData.progressTimes) Object.assign(progressTimes, dbData.progressTimes);
       } else {
         console.warn('Could not fetch state from Supabase, falling back to localStorage:', error);
         loadStateFromLocalStorage();
@@ -374,6 +387,7 @@ function setupSupabaseRealtime() {
           if (newData.rowDirectorsFloor1) Object.assign(rowDirectorsFloor1, newData.rowDirectorsFloor1);
           if (newData.rowDirectorsFloor2) Object.assign(rowDirectorsFloor2, newData.rowDirectorsFloor2);
           if (newData.entryTimes) Object.assign(entryTimes, newData.entryTimes);
+          if (newData.progressTimes) Object.assign(progressTimes, newData.progressTimes);
           
           sanitizeState(false);
           updateUI();
@@ -435,15 +449,49 @@ function maintainEntryTimes() {
   });
 }
 
+// Synchronize and maintain timestamps when slots transitioned to progress state (index 0)
+function maintainProgressTimes() {
+  const currentKeys = new Set();
+  const wards = ['female', 'male', 'secondFloor'];
+  const availableDoctors = ['최보빈', '김준현', '김영윤', '박지현', '안태윤', '황두호'];
+  
+  wards.forEach(ward => {
+    availableDoctors.forEach(docName => {
+      const arr = state[ward]?.[docName];
+      if (Array.isArray(arr) && arr.length > 0) {
+        const val = arr[0];
+        if (val !== null && val !== undefined && typeof val === 'string' && val.endsWith('_progress')) {
+          const cleanVal = val.substring(0, val.length - 9);
+          const key = `${ward}|${docName}|${cleanVal}`;
+          currentKeys.add(key);
+          
+          if (!progressTimes[key]) {
+            progressTimes[key] = Date.now();
+          }
+        }
+      }
+    });
+  });
+  
+  // Clean up stale progress times
+  Object.keys(progressTimes).forEach(key => {
+    if (!currentKeys.has(key)) {
+      delete progressTimes[key];
+    }
+  });
+}
+
 // Save current state to localStorage and Supabase
 async function saveState() {
   maintainEntryTimes();
+  maintainProgressTimes();
   localStorage.setItem('clinic_treatment_state', JSON.stringify(state));
   localStorage.setItem('clinic_leave_times', JSON.stringify(leaveTimes));
   localStorage.setItem('clinic_off_duty_directors', JSON.stringify(offDutyDirectors));
   localStorage.setItem('clinic_row_directors_floor1', JSON.stringify(rowDirectorsFloor1));
   localStorage.setItem('clinic_row_directors_floor2', JSON.stringify(rowDirectorsFloor2));
   localStorage.setItem('clinic_entry_times', JSON.stringify(entryTimes));
+  localStorage.setItem('clinic_progress_times', JSON.stringify(progressTimes));
 
   if (supabaseClient) {
     try {
@@ -457,7 +505,8 @@ async function saveState() {
             offDutyDirectors,
             rowDirectorsFloor1,
             rowDirectorsFloor2,
-            entryTimes
+            entryTimes,
+            progressTimes
           },
           updated_at: new Date().toISOString()
         });
@@ -473,18 +522,21 @@ async function saveState() {
 // Save a single JSONB field path to Supabase atomically via RPC
 async function saveStateField(path, value) {
   maintainEntryTimes();
+  maintainProgressTimes();
   localStorage.setItem('clinic_treatment_state', JSON.stringify(state));
   localStorage.setItem('clinic_leave_times', JSON.stringify(leaveTimes));
   localStorage.setItem('clinic_off_duty_directors', JSON.stringify(offDutyDirectors));
   localStorage.setItem('clinic_row_directors_floor1', JSON.stringify(rowDirectorsFloor1));
   localStorage.setItem('clinic_row_directors_floor2', JSON.stringify(rowDirectorsFloor2));
   localStorage.setItem('clinic_entry_times', JSON.stringify(entryTimes));
+  localStorage.setItem('clinic_progress_times', JSON.stringify(progressTimes));
 
   if (supabaseClient) {
     try {
       const results = await Promise.all([
         supabaseClient.rpc('update_clinic_state_field', { p_path: path, p_value: value }),
-        supabaseClient.rpc('update_clinic_state_field', { p_path: ['entryTimes'], p_value: entryTimes })
+        supabaseClient.rpc('update_clinic_state_field', { p_path: ['entryTimes'], p_value: entryTimes }),
+        supabaseClient.rpc('update_clinic_state_field', { p_path: ['progressTimes'], p_value: progressTimes })
       ]);
       const hasError = results.some(res => res.error);
       if (hasError) {
@@ -502,15 +554,18 @@ async function saveStateField(path, value) {
 // Save all ward states for a specific doctor atomically
 async function saveStateForDoctor(docName) {
   maintainEntryTimes();
+  maintainProgressTimes();
   localStorage.setItem('clinic_treatment_state', JSON.stringify(state));
   localStorage.setItem('clinic_entry_times', JSON.stringify(entryTimes));
+  localStorage.setItem('clinic_progress_times', JSON.stringify(progressTimes));
   if (supabaseClient) {
     try {
       const results = await Promise.all([
         supabaseClient.rpc('update_clinic_state_field', { p_path: ['state', 'female', docName], p_value: state.female[docName] || [] }),
         supabaseClient.rpc('update_clinic_state_field', { p_path: ['state', 'male', docName], p_value: state.male[docName] || [] }),
         supabaseClient.rpc('update_clinic_state_field', { p_path: ['state', 'secondFloor', docName], p_value: state.secondFloor[docName] || [] }),
-        supabaseClient.rpc('update_clinic_state_field', { p_path: ['entryTimes'], p_value: entryTimes })
+        supabaseClient.rpc('update_clinic_state_field', { p_path: ['entryTimes'], p_value: entryTimes }),
+        supabaseClient.rpc('update_clinic_state_field', { p_path: ['progressTimes'], p_value: progressTimes })
       ]);
       const hasError = results.some(res => res.error);
       if (hasError) {
@@ -538,6 +593,7 @@ function compactRowState(ward, docName) {
 // Sanitize state by removing _progress suffix from slots at index >= 1
 function sanitizeState(shouldSave = true) {
   maintainEntryTimes();
+  maintainProgressTimes();
   const wards = ['female', 'male', 'secondFloor'];
   let modified = false;
   
@@ -924,14 +980,31 @@ function updateSlotDisplay(slotEl, val, index) {
     const shouldShowTime = lookupVal !== '/' && lookupVal !== '⏸️' && !isArrow(lookupVal);
     
     let elapsedBadgeHtml = '';
+    let progressBadgeHtml = '';
     if (shouldShowTime && docName && ward) {
       const key = `${ward}|${docName}|${lookupVal}`;
+      
+      // Total elapsed minutes (bottom right)
       const startTime = entryTimes[key];
       const elapsedMins = startTime ? Math.max(0, Math.floor((Date.now() - startTime) / (60 * 1000))) : 0;
       elapsedBadgeHtml = `<span class="slot-elapsed-time" data-key="${key}">${elapsedMins}</span>`;
+      
+      // Progress duration (minutes:seconds, top left) if currently in progress
+      if (isProgress && index === 0) {
+        const progStartTime = progressTimes[key];
+        let durationStr = '0:00';
+        if (progStartTime) {
+          const diffMs = Date.now() - progStartTime;
+          const totalSecs = Math.max(0, Math.floor(diffMs / 1000));
+          const mins = Math.floor(totalSecs / 60);
+          const secs = totalSecs % 60;
+          durationStr = `${mins}:${String(secs).padStart(2, '0')}`;
+        }
+        progressBadgeHtml = `<span class="slot-progress-time" data-key="${key}">${durationStr}</span>`;
+      }
     }
 
-    slotEl.innerHTML = `<div class="${magnetClass}" draggable="true">${displayVal}${elapsedBadgeHtml}</div>`;
+    slotEl.innerHTML = `<div class="${magnetClass}" draggable="true">${displayVal}${progressBadgeHtml}${elapsedBadgeHtml}</div>`;
     
   } else {
     slotEl.innerHTML = '';
@@ -2240,6 +2313,19 @@ function updateElapsedTimesDisplay() {
       badge.textContent = Math.max(0, mins);
     }
   });
+
+  const progBadges = document.querySelectorAll('.slot-progress-time');
+  progBadges.forEach(badge => {
+    const key = badge.dataset.key;
+    const startTime = progressTimes[key];
+    if (startTime) {
+      const diffMs = Date.now() - startTime;
+      const totalSecs = Math.max(0, Math.floor(diffMs / 1000));
+      const mins = Math.floor(totalSecs / 60);
+      const secs = totalSecs % 60;
+      badge.textContent = `${mins}:${String(secs).padStart(2, '0')}`;
+    }
+  });
 }
 
 // Start Clock
@@ -2399,6 +2485,7 @@ async function pullStateFromSupabase() {
       if (dbData.rowDirectorsFloor1) Object.assign(rowDirectorsFloor1, dbData.rowDirectorsFloor1);
       if (dbData.rowDirectorsFloor2) Object.assign(rowDirectorsFloor2, dbData.rowDirectorsFloor2);
       if (dbData.entryTimes) Object.assign(entryTimes, dbData.entryTimes);
+      if (dbData.progressTimes) Object.assign(progressTimes, dbData.progressTimes);
       
       // Normalize values
       const wards = ['female', 'male', 'secondFloor'];
