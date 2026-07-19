@@ -990,7 +990,8 @@ body[data-active-tab="floor2"] #panel-floor2 {
 .slot-progress-time {
   position: absolute;
   top: 8%;
-  left: 12%;
+  left: 50%;
+  transform: translateX(-50%);
   font-size: 0.65rem;
   font-weight: 800;
   color: currentColor;
@@ -1010,7 +1011,6 @@ body[data-active-tab="floor2"] #panel-floor2 {
   .slot-progress-time {
     font-size: 0.55rem;
     top: 6%;
-    left: 10%;
   }
 }
 
@@ -1023,7 +1023,6 @@ body[data-active-tab="floor2"] #panel-floor2 {
   .slot-progress-time {
     font-size: 0.48rem;
     top: 4%;
-    left: 8%;
   }
 }
 
@@ -1036,7 +1035,6 @@ body[data-active-tab="floor2"] #panel-floor2 {
   .slot-progress-time {
     font-size: 1rem;
     top: 10%;
-    left: 14%;
   }
 }
 
