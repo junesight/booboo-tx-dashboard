@@ -1778,15 +1778,16 @@ body[data-active-tab="floor2"] #panel-floor2 {
 }
 
 .btn-start-choice {
-  height: 90px !important;
-  font-size: 1.35rem !important;
-  font-weight: 700 !important;
+  height: 120px !important;
+  font-size: 1.8rem !important;
+  font-weight: 800 !important;
   line-height: 1.35 !important;
   display: flex !important;
   align-items: center;
   justify-content: center;
   text-align: center;
   flex: 1;
+  border-radius: 12px !important;
 }
 
 #cancel-progress-modal .modal-footer,
