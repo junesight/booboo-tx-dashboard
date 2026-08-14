@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+  <script>
+    window.onerror = function(message, source, lineno, colno, error) {
+      alert("웹앱 오류 감지:\n\n메시지: " + message + "\n파일: " + source + "\n라인: " + lineno + "\n\n(캐시 비우기 및 새로고침 후 다시 확인해 주세요)");
+      return false;
+    };
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>부부한의원 실시간 치료 현황판</title>
@@ -297,6 +303,7 @@
           <button class="btn btn-cancel" id="btn-cancel-progress-modal">취소</button>
         </div>
       </div>
+    </div>
     <!-- Start Treatment Choices Modal -->
     <div class="modal-overlay" id="start-treatment-modal">
       <div class="modal-card">
