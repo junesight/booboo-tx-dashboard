@@ -1382,6 +1382,30 @@ function showConfirmModal(title, text, confirmCallback) {
   modal.classList.add('active');
 }
 
+// Start Treatment Choices Modal
+let startTreatmentData = null;
+
+function openStartTreatmentModal(ward, docName, index, val) {
+  startTreatmentData = { ward, docName, index, val };
+  
+  const modal = document.getElementById('start-treatment-modal');
+  const textEl = document.getElementById('start-treatment-text');
+  
+  const parsed = parseInt(val, 10);
+  const targetName = isNaN(parsed) ? `${val}` : `${val}번 베드`;
+  textEl.textContent = `[${docName} 원장님 - ${targetName}] 치료를 개시하시겠습니까?`;
+  
+  modal.classList.add('active');
+}
+
+function closeStartTreatmentModal() {
+  const modal = document.getElementById('start-treatment-modal');
+  if (modal) {
+    modal.classList.remove('active');
+  }
+  startTreatmentData = null;
+}
+
 // Setup Event Listeners
 function setupEventListeners() {
   const boardWrapper = document.querySelector('.board-wrapper');
@@ -1477,19 +1501,26 @@ function setupEventListeners() {
               progressedWard = handleQueueShift(ward, docName, index, clearedVal);
             }
             if (progressedWard) notifyNextTreatmentStart(docName, progressedWard);
+            saveStateForDoctor(docName);
+            updateUI();
           } else {
             if (currentVal === '⏸️') {
               state[ward][docName].splice(index, 1);
               compactRowState(ward, docName);
+              saveStateForDoctor(docName);
+              updateUI();
             } else {
-              console.log(`[Click Debug] Click on normal item at index 0. Transitioning to progress.`);
-              state[ward][docName][index] = String(currentVal) + '_progress';
-              clearOtherWardsProgress(docName, ward);
-              notifyInitialTreatmentStart(docName, ward);
+              if (currentVal === '/' || isArrowItem(currentVal)) {
+                state[ward][docName][index] = String(currentVal) + '_progress';
+                clearOtherWardsProgress(docName, ward);
+                notifyInitialTreatmentStart(docName, ward);
+                saveStateForDoctor(docName);
+                updateUI();
+              } else {
+                openStartTreatmentModal(ward, docName, index, currentVal);
+              }
             }
           }
-          saveStateForDoctor(docName);
-          updateUI();
         } else {
           // INDEX >= 1: Requires double-click within 3 seconds to delete (indicated visually by red styling)
           const isConfirming = slot.classList.contains('delete-confirm');
@@ -1961,6 +1992,75 @@ function setupEventListeners() {
 
   document.addEventListener('visibilitychange', handleVisibilityOrFocus);
   window.addEventListener('focus', handleVisibilityOrFocus);
+
+  // Start Treatment Modal Button Listeners
+  const btnStartDirect = document.getElementById('btn-start-direct');
+  const btnStartCall = document.getElementById('btn-start-call');
+  const btnStartCancel = document.getElementById('btn-start-cancel');
+
+  if (btnStartDirect && btnStartCall && btnStartCancel) {
+    btnStartDirect.addEventListener('click', () => {
+      if (startTreatmentData) {
+        const { ward, docName, index, val } = startTreatmentData;
+        state[ward][docName][index] = String(val) + '_progress';
+        clearOtherWardsProgress(docName, ward);
+        notifyInitialTreatmentStart(docName, ward);
+        saveStateForDoctor(docName);
+        updateUI();
+      }
+      closeStartTreatmentModal();
+    });
+
+    btnStartCall.addEventListener('click', async () => {
+      if (startTreatmentData) {
+        const { ward, docName, index, val } = startTreatmentData;
+        state[ward][docName][index] = String(val) + '_progress';
+        clearOtherWardsProgress(docName, ward);
+        notifyInitialTreatmentStart(docName, ward);
+        
+        // Construct and send call signal
+        const callSignal = {
+          docName: docName,
+          bed: val,
+          timestamp: Date.now()
+        };
+        
+        // Save locally and send to database
+        localStorage.setItem('clinic_call_signal', JSON.stringify(callSignal));
+        
+        // Update both state and callSignal in database atomically
+        if (supabaseClient) {
+          try {
+            await Promise.all([
+              saveStateField(['state', ward, docName], state[ward][docName]),
+              saveStateField(['callSignal'], callSignal)
+            ]);
+          } catch (e) {
+            console.error('[Call Signal] Failed to send to Supabase:', e);
+            saveStateForDoctor(docName);
+          }
+        } else {
+          saveStateForDoctor(docName);
+        }
+        
+        updateUI();
+      }
+      closeStartTreatmentModal();
+    });
+
+    btnStartCancel.addEventListener('click', () => {
+      closeStartTreatmentModal();
+    });
+  }
+
+  const startTreatmentModal = document.getElementById('start-treatment-modal');
+  if (startTreatmentModal) {
+    startTreatmentModal.addEventListener('click', (e) => {
+      if (e.target === startTreatmentModal) {
+        closeStartTreatmentModal();
+      }
+    });
+  }
 }
 
 // Open Selection Modal

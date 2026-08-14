@@ -1767,6 +1767,16 @@ body[data-active-tab="floor2"] #panel-floor2 {
   transform: translateY(-1px);
 }
 
+.btn-call-director {
+  background: #3b82f6 !important;
+  border-color: #3b82f6 !important;
+}
+
+.btn-call-director:hover {
+  background: #2563eb !important;
+  border-color: #2563eb !important;
+}
+
 #cancel-progress-modal .modal-footer,
 #custom-confirm-modal .modal-footer {
   flex-direction: row;
