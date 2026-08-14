@@ -1393,7 +1393,7 @@ function openStartTreatmentModal(ward, docName, index, val) {
   
   const parsed = parseInt(val, 10);
   const targetName = isNaN(parsed) ? `${val}` : `${val}번 베드`;
-  textEl.textContent = `[${docName} 원장님 - ${targetName}] 치료를 개시하시겠습니까?`;
+  textEl.innerHTML = `[${docName} 원장님 - ${targetName}]<br>치료를 개시하시겠습니까?`;
   
   modal.classList.add('active');
 }
