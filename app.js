@@ -138,6 +138,18 @@ let dragSourceFloor = null; // 1 | 2
 let longPressTimer = null;
 let isLongPress = false;
 
+let isLoadedFromSupabase = false;
+
+function showOfflineBanner() {
+  const banner = document.getElementById('offline-banner');
+  if (banner) banner.classList.add('active');
+}
+
+function hideOfflineBanner() {
+  const banner = document.getElementById('offline-banner');
+  if (banner) banner.classList.remove('active');
+}
+
 // DOM Elements
 const modalOverlay = document.getElementById('bed-modal');
 const modalBedGrid = document.getElementById('modal-bed-grid');
@@ -276,6 +288,8 @@ async function initApp() {
         .single();
         
       if (!error && dbRow && dbRow.data) {
+        isLoadedFromSupabase = true;
+        hideOfflineBanner();
         const dbData = dbRow.data;
         if (dbData.state) Object.assign(state, dbData.state);
         if (dbData.leaveTimes) Object.assign(leaveTimes, dbData.leaveTimes);
@@ -285,14 +299,20 @@ async function initApp() {
         if (dbData.entryTimes) Object.assign(entryTimes, dbData.entryTimes);
         if (dbData.progressTimes) Object.assign(progressTimes, dbData.progressTimes);
       } else {
+        isLoadedFromSupabase = false;
+        showOfflineBanner();
         console.warn('Could not fetch state from Supabase, falling back to localStorage:', error);
         loadStateFromLocalStorage();
       }
     } catch (e) {
+      isLoadedFromSupabase = false;
+      showOfflineBanner();
       console.error('Error fetching state from Supabase:', e);
       loadStateFromLocalStorage();
     }
   } else {
+    isLoadedFromSupabase = false;
+    showOfflineBanner();
     loadStateFromLocalStorage();
   }
 
@@ -399,6 +419,7 @@ function setupSupabaseRealtime() {
     console.log("Supabase Realtime subscribe status:", status);
     if (status === 'SUBSCRIBED') {
       updateConnectionStatus('SUBSCRIBED');
+      pullStateFromSupabase();
     } else if (status === 'TIMED_OUT' || status === 'CLOSED' || status === 'CHANNEL_ERROR') {
       updateConnectionStatus('disconnected');
     }
@@ -407,6 +428,7 @@ function setupSupabaseRealtime() {
   // Handle online/offline events for dynamic reconnect status updates
   window.addEventListener('online', () => {
     updateConnectionStatus('connecting');
+    pullStateFromSupabase();
   });
   window.addEventListener('offline', () => {
     updateConnectionStatus('disconnected');
@@ -494,6 +516,10 @@ async function saveState() {
   localStorage.setItem('clinic_progress_times', JSON.stringify(progressTimes));
 
   if (supabaseClient) {
+    if (!isLoadedFromSupabase) {
+      console.warn('[Supabase] Save blocked: Initial fetch from Supabase failed on this device, so we block writes to prevent wiping out server state.');
+      return;
+    }
     try {
       const { error } = await supabaseClient
         .from('clinic_state')
@@ -532,6 +558,10 @@ async function saveStateField(path, value) {
   localStorage.setItem('clinic_progress_times', JSON.stringify(progressTimes));
 
   if (supabaseClient) {
+    if (!isLoadedFromSupabase) {
+      console.warn('[Supabase] Save field blocked: Initial fetch from Supabase failed on this device, so we block writes.');
+      return;
+    }
     try {
       const results = await Promise.all([
         supabaseClient.rpc('update_clinic_state_field', { p_path: path, p_value: value }),
@@ -559,6 +589,10 @@ async function saveStateForDoctor(docName) {
   localStorage.setItem('clinic_entry_times', JSON.stringify(entryTimes));
   localStorage.setItem('clinic_progress_times', JSON.stringify(progressTimes));
   if (supabaseClient) {
+    if (!isLoadedFromSupabase) {
+      console.warn(`[Supabase] Save for doctor ${docName} blocked: Initial fetch from Supabase failed on this device, so we block writes.`);
+      return;
+    }
     try {
       const results = await Promise.all([
         supabaseClient.rpc('update_clinic_state_field', { p_path: ['state', 'female', docName], p_value: state.female[docName] || [] }),
@@ -2580,6 +2614,8 @@ async function pullStateFromSupabase() {
       .single();
       
     if (!error && dbRow && dbRow.data) {
+      isLoadedFromSupabase = true;
+      hideOfflineBanner();
       const dbData = dbRow.data;
       if (dbData.state) Object.assign(state, dbData.state);
       if (dbData.leaveTimes) Object.assign(leaveTimes, dbData.leaveTimes);
@@ -2610,9 +2646,13 @@ async function pullStateFromSupabase() {
       console.log('[Sync] State pull and UI update complete.');
     } else {
       console.error('[Sync] Error pulling state from Supabase:', error);
+      isLoadedFromSupabase = false;
+      showOfflineBanner();
     }
   } catch (e) {
     console.error('[Sync] Exception pulling state from Supabase:', e);
+    isLoadedFromSupabase = false;
+    showOfflineBanner();
   }
 }
 

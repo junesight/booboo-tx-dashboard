@@ -2522,3 +2522,28 @@ body.header-collapsed .btn-toggle-header {
     bottom: 3rem !important;
   }
 }
+
+.offline-banner {
+  display: none;
+  background: #ef4444;
+  color: #ffffff;
+  text-align: center;
+  padding: 10px 16px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+  z-index: 9999;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  animation: slideDown 0.3s ease;
+}
+
+.offline-banner.active {
+  display: block;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
+}
