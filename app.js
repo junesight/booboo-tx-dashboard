@@ -139,6 +139,7 @@ let longPressTimer = null;
 let isLongPress = false;
 
 let isLoadedFromSupabase = false;
+let pendingReservationData = null;
 
 function showOfflineBanner() {
   const banner = document.getElementById('offline-banner');
@@ -915,6 +916,12 @@ function updateSlotDisplay(slotEl, val, index) {
       isProgress = true;
       cleanVal = val.substring(0, val.length - 9);
     }
+    
+    let isReserved = false;
+    if (typeof cleanVal === 'string' && cleanVal.endsWith('_reserved')) {
+      isReserved = true;
+      cleanVal = cleanVal.substring(0, cleanVal.length - 9);
+    }
     const lookupVal = cleanVal;
 
     let isBloodletting = false;
@@ -947,6 +954,8 @@ function updateSlotDisplay(slotEl, val, index) {
     let magnetClass = 'slot-magnet';
     if (showProgressVisuals) {
       magnetClass += ' in-progress';
+    } else if (isReserved) {
+      magnetClass += ' reserved';
     }
     
     let displayVal = cleanVal;
@@ -1425,8 +1434,13 @@ function openStartTreatmentModal(ward, docName, index, val) {
   const modal = document.getElementById('start-treatment-modal');
   const textEl = document.getElementById('start-treatment-text');
   
-  const parsed = parseInt(val, 10);
-  const targetName = isNaN(parsed) ? `${val}` : `${val}번 베드`;
+  let displayVal = val;
+  if (typeof val === 'string' && val.endsWith('_reserved')) {
+    displayVal = val.substring(0, val.length - 9);
+  }
+  
+  const parsed = parseInt(displayVal, 10);
+  const targetName = isNaN(parsed) ? `${displayVal}` : `${displayVal}번 베드`;
   textEl.innerHTML = `[${docName} 원장님 - ${targetName}]<br>치료를 개시하시겠습니까?`;
   
   modal.classList.add('active');
@@ -2007,6 +2021,9 @@ function setupEventListeners() {
       if (cancelProgressModalOverlay.classList.contains('active')) {
         closeCancelProgressModal();
       }
+      if (document.getElementById('reservation-modal').classList.contains('active')) {
+        closeReservationModal();
+      }
     }
   });
 
@@ -2031,8 +2048,9 @@ function setupEventListeners() {
   const btnStartDirect = document.getElementById('btn-start-direct');
   const btnStartCall = document.getElementById('btn-start-call');
   const btnStartCancel = document.getElementById('btn-start-cancel');
+  const btnStartDelete = document.getElementById('btn-start-delete');
 
-  if (btnStartDirect && btnStartCall && btnStartCancel) {
+  if (btnStartDirect && btnStartCall && btnStartCancel && btnStartDelete) {
     btnStartDirect.addEventListener('click', () => {
       if (startTreatmentData) {
         const { ward, docName, index, val } = startTreatmentData;
@@ -2085,6 +2103,18 @@ function setupEventListeners() {
     btnStartCancel.addEventListener('click', () => {
       closeStartTreatmentModal();
     });
+
+    btnStartDelete.addEventListener('click', () => {
+      if (startTreatmentData) {
+        const { ward, docName, index } = startTreatmentData;
+        state[ward][docName].splice(index, 1);
+        compactRowState(ward, docName);
+        saveStateForDoctor(docName);
+        notifyTreatmentOrderChangedForWardAndDependents(docName, ward);
+        updateUI();
+      }
+      closeStartTreatmentModal();
+    });
   }
 
   const startTreatmentModal = document.getElementById('start-treatment-modal');
@@ -2092,6 +2122,36 @@ function setupEventListeners() {
     startTreatmentModal.addEventListener('click', (e) => {
       if (e.target === startTreatmentModal) {
         closeStartTreatmentModal();
+      }
+    });
+  }
+
+  // Reservation Modal Button Listeners
+  const btnResReserved = document.getElementById('btn-res-reserved');
+  const btnResGeneral = document.getElementById('btn-res-general');
+  const btnResCancel = document.getElementById('btn-res-cancel');
+  
+  if (btnResReserved) {
+    btnResReserved.addEventListener('click', () => confirmReservation(true));
+  }
+  if (btnResGeneral) {
+    btnResGeneral.addEventListener('click', () => confirmReservation(false));
+  }
+  if (btnResCancel) {
+    btnResCancel.addEventListener('click', () => {
+      const { ward, docName, index } = activeSlot;
+      closeReservationModal();
+      if (ward && docName && index !== null) {
+        openModal(ward, docName, index);
+      }
+    });
+  }
+
+  const reservationModal = document.getElementById('reservation-modal');
+  if (reservationModal) {
+    reservationModal.addEventListener('click', (e) => {
+      if (e.target === reservationModal) {
+        closeReservationModal();
       }
     });
   }
@@ -2336,6 +2396,20 @@ function closeModal() {
 function selectBedNumber(num) {
   const { ward, docName, index } = activeSlot;
   if (ward && docName && index !== null) {
+    const parsed = parseInt(num, 10);
+    const isPureNumber = !isNaN(parsed) && String(parsed) === String(num);
+    
+    if (!isBloodlettingMode && isPureNumber) {
+      // Show reservation choice modal
+      pendingReservationData = { num, ward, docName, index };
+      closeModal();
+      const modal = document.getElementById('reservation-modal');
+      const textEl = document.getElementById('reservation-modal-text');
+      if (textEl) textEl.innerHTML = `[${docName} 원장님 - ${num}번 베드]<br>예약 구분을 선택해 주세요.`;
+      if (modal) modal.classList.add('active');
+      return;
+    }
+    
     const saveValue = isBloodlettingMode ? `사혈_${num}` : num;
     const currentVal = state[ward][docName][index];
     if (currentVal === null || currentVal === undefined) {
@@ -2353,6 +2427,38 @@ function selectBedNumber(num) {
     updateUI();
     closeModal();
   }
+}
+
+// Confirm reservation/non-reservation selection
+function confirmReservation(isReserved) {
+  if (!pendingReservationData) return;
+  const { num, ward, docName, index } = pendingReservationData;
+  
+  const saveValue = isReserved ? `${num}_reserved` : num;
+  const currentVal = state[ward][docName][index];
+  
+  if (currentVal === null || currentVal === undefined) {
+    // Adding a new patient: append to the active list
+    const activeList = state[ward][docName].filter(val => val !== null);
+    activeList.push(saveValue);
+    state[ward][docName] = activeList;
+  } else {
+    // Editing an existing patient at the clicked index
+    state[ward][docName][index] = saveValue;
+  }
+  
+  compactRowState(ward, docName);
+  saveStateField(['state', ward, docName], state[ward][docName]);
+  notifyTreatmentOrderChangedForWardAndDependents(docName, ward);
+  
+  updateUI();
+  closeReservationModal();
+}
+
+function closeReservationModal() {
+  const modal = document.getElementById('reservation-modal');
+  if (modal) modal.classList.remove('active');
+  pendingReservationData = null;
 }
 
 // Clear selected slot (remove magnet and shift remaining left)

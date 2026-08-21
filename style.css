@@ -2547,3 +2547,8 @@ body.header-collapsed .btn-toggle-header {
   from { transform: translateY(-100%); }
   to { transform: translateY(0); }
 }
+
+.slot-magnet.reserved {
+  color: #10b981 !important;
+  border-color: #10b981 !important;
+}
