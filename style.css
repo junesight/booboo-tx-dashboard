@@ -2549,6 +2549,7 @@ body.header-collapsed .btn-toggle-header {
 }
 
 .slot-magnet.reserved {
-  color: #10b981 !important;
-  border-color: #10b981 !important;
+  background: #cbd5e1 !important;
+  color: #000000 !important;
+  border-color: #000000 !important;
 }
