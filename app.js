@@ -2392,6 +2392,25 @@ function closeModal() {
   isBloodlettingMode = false;
 }
 
+// Helper to decide if we should ask for reservation based on time
+function shouldShowReservationPopup() {
+  const now = new Date();
+  const hours = now.getHours();
+  
+  if (isWeekendOrHoliday(now)) {
+    // Weekend/Holiday: operating until 2 PM. Skip popup if 13:00 or later (hours >= 13)
+    if (hours >= 13) {
+      return false;
+    }
+  } else {
+    // Weekday: Skip popup if 18:00 or later (hours >= 18)
+    if (hours >= 18) {
+      return false;
+    }
+  }
+  return true;
+}
+
 // Select Bed Number (Left-aligned FIFO insertion)
 function selectBedNumber(num) {
   const { ward, docName, index } = activeSlot;
@@ -2399,7 +2418,7 @@ function selectBedNumber(num) {
     const parsed = parseInt(num, 10);
     const isPureNumber = !isNaN(parsed) && String(parsed) === String(num);
     
-    if (!isBloodlettingMode && isPureNumber) {
+    if (!isBloodlettingMode && isPureNumber && shouldShowReservationPopup()) {
       // Show reservation choice modal
       pendingReservationData = { num, ward, docName, index };
       closeModal();
