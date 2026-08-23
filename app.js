@@ -452,6 +452,9 @@ function maintainEntryTimes() {
             if (typeof val === 'string' && val.endsWith('_progress')) {
               cleanVal = val.substring(0, val.length - 9);
             }
+            if (typeof cleanVal === 'string' && cleanVal.endsWith('_reserved')) {
+              cleanVal = cleanVal.substring(0, cleanVal.length - 9);
+            }
             const key = `${ward}|${docName}|${cleanVal}`;
             currentKeys.add(key);
             
@@ -484,7 +487,10 @@ function maintainProgressTimes() {
       if (Array.isArray(arr) && arr.length > 0) {
         const val = arr[0];
         if (val !== null && val !== undefined && typeof val === 'string' && val.endsWith('_progress')) {
-          const cleanVal = val.substring(0, val.length - 9);
+          let cleanVal = val.substring(0, val.length - 9);
+          if (typeof cleanVal === 'string' && cleanVal.endsWith('_reserved')) {
+            cleanVal = cleanVal.substring(0, cleanVal.length - 9);
+          }
           const key = `${ward}|${docName}|${cleanVal}`;
           currentKeys.add(key);
           
