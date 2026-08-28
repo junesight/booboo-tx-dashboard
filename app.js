@@ -1306,6 +1306,40 @@ function notifyTreatmentOrderChangedForWardAndDependents(docName, changedWard) {
   notifyTreatmentOrderChanged(docName, changedWard);
 }
 
+// Helper to determine if a value is a Doctor's Office (Consultation) treatment
+function isConsultationRoomTreatment(val) {
+  if (!val) return false;
+  let clean = val;
+  if (typeof val === 'string') {
+    if (val.endsWith('_progress')) {
+      clean = val.substring(0, val.length - 9);
+    }
+    if (clean.endsWith('_reserved')) {
+      clean = clean.substring(0, clean.length - 9);
+    }
+  }
+  return ['상담', '린다이어트', '한약상담', '추나', '초음파', '자하거/디나'].includes(clean);
+}
+
+// Helper to determine if a value is a Treatment Room (Bed) treatment
+function isBedTreatment(val) {
+  if (!val) return false;
+  let clean = val;
+  if (typeof val === 'string') {
+    if (val.endsWith('_progress')) {
+      clean = val.substring(0, val.length - 9);
+    }
+    if (clean.endsWith('_reserved')) {
+      clean = clean.substring(0, clean.length - 9);
+    }
+    if (clean.startsWith('사혈_') || clean === '사혈') {
+      return true;
+    }
+  }
+  const parsed = parseInt(clean, 10);
+  return !isNaN(parsed) && String(parsed) === String(clean);
+}
+
 // Handle cross-ward routing and standard queue shifts when an item is cleared from index 0
 function handleQueueShift(ward, docName, index, clearedValue) {
   if (index !== 0 || !clearedValue) return null;
@@ -1334,6 +1368,12 @@ function handleQueueShift(ward, docName, index, clearedValue) {
   const nextItem = state[ward][docName][0];
   if (nextItem !== null && nextItem !== undefined) {
     if (typeof nextItem !== 'string' || !nextItem.endsWith('_progress')) {
+      // Custom Rule: If transitioning from consultation room treatment to bed treatment, block auto-advance
+      if (isConsultationRoomTreatment(clearedValue) && isBedTreatment(nextItem)) {
+        console.log(`[Queue Routing] Reached bed treatment ${nextItem} after consultation treatment ${clearedValue}. Stopping auto-advance.`);
+        return null;
+      }
+      
       console.log(`[Queue Routing] Auto-transitioning next item ${nextItem} to progress in current ward ${ward}.`);
       state[ward][docName][0] = String(nextItem) + '_progress';
       clearOtherWardsProgress(docName, ward);
