@@ -1173,6 +1173,25 @@ function findNextTreatmentRaw(ward, docName) {
 
 function buildTreatmentNotificationPayload(docName, ward, notificationType = 'progress-followup') {
   if (docName !== SLACK_NOTIFY_DOCTOR) return null;
+
+  if (notificationType === 'doctor-call') {
+    if (!startTreatmentData) return null;
+    const { val } = startTreatmentData;
+    const currentValue = cleanProgressValue(val);
+    const currentLabel = formatTreatmentLabel(currentValue);
+    return {
+      doctorName: docName,
+      ward,
+      wardLabel: getWardLabel(ward),
+      notificationType: 'doctor-call',
+      currentTreatment: currentLabel,
+      currentTreatmentKind: formatTreatmentKind(currentValue),
+      nextTreatment: null,
+      nextTreatmentKind: null,
+      eventKey: `doctor-call|${docName}|${ward}|${currentLabel}|${Date.now()}`
+    };
+  }
+
   if (!state[ward] || !Array.isArray(state[ward][docName])) return null;
 
   const row = state[ward][docName];
@@ -1246,6 +1265,11 @@ function markTreatmentNotificationSent(payload) {
 
 async function sendTreatmentNotification(docName, ward, notificationType = 'progress-followup') {
   if (!supabaseClient) return;
+
+  // Pause all other notification types (only allow doctor-call)
+  if (notificationType !== 'doctor-call') {
+    return;
+  }
 
   const payload = buildTreatmentNotificationPayload(docName, ward, notificationType);
   if (!payload || hasRecentTreatmentNotification(payload)) return;
@@ -2115,6 +2139,9 @@ function setupEventListeners() {
         state[ward][docName][index] = String(val) + '_progress';
         clearOtherWardsProgress(docName, ward);
         notifyInitialTreatmentStart(docName, ward);
+        
+        // Trigger Slack notification for Doctor Call
+        sendTreatmentNotification(docName, ward, 'doctor-call');
         
         // Construct and send call signal
         const callSignal = {

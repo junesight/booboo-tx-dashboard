@@ -10,7 +10,7 @@ type TreatmentNotificationRequest = {
   doctorName?: string;
   ward?: string;
   wardLabel?: string;
-  notificationType?: 'treatment-start' | 'progress-followup';
+  notificationType?: 'treatment-start' | 'progress-followup' | 'doctor-call';
   currentTreatment?: string;
   currentTreatmentKind?: string | null;
   nextTreatment?: string | null;
@@ -208,12 +208,43 @@ Deno.serve(async (req) => {
   // ---------------------------------------------------------------------------------
 
   const notificationType = body.notificationType || 'progress-followup';
-  const nextText = body.nextTreatment
-    ? nextTreatmentText(body.nextTreatment, body.nextTreatmentKind)
-    : '다음 순서는 없습니다.';
-  const text = notificationType === 'treatment-start'
-    ? `${startTreatmentText(body.currentTreatment, body.currentTreatmentKind)}\n${nextText}`
-    : `${currentTreatmentText(body.currentTreatment, body.currentTreatmentKind)}\n${nextText}`;
+  let text = '';
+
+  if (notificationType === 'doctor-call') {
+    let redText = '';
+    const bed = body.currentTreatment;
+    const kind = body.currentTreatmentKind;
+    if (kind === 'bloodletting') {
+      redText = '사혈';
+    } else if (bed === '상담') {
+      redText = '상담';
+    } else if (bed === '린다이어트' || bed === '린다') {
+      redText = '린다이어트 상담';
+    } else if (bed === '한약상담') {
+      redText = '한약상담';
+    } else if (bed === '추나') {
+      redText = '추나치료';
+    } else if (bed === '초음파') {
+      redText = '초음파 약침치료';
+    } else if (bed === '자하거/디나' || bed === '자하거') {
+      redText = '자하거/디나 약침치료';
+    } else {
+      const parsed = parseInt(bed, 10);
+      if (!isNaN(parsed)) {
+        redText = parsed + '번 침 치료';
+      } else {
+        redText = bed + ' 치료';
+      }
+    }
+    text = `${redText} 있습니다.`;
+  } else {
+    const nextText = body.nextTreatment
+      ? nextTreatmentText(body.nextTreatment, body.nextTreatmentKind)
+      : '다음 순서는 없습니다.';
+    text = notificationType === 'treatment-start'
+      ? `${startTreatmentText(body.currentTreatment, body.currentTreatmentKind)}\n${nextText}`
+      : `${currentTreatmentText(body.currentTreatment, body.currentTreatmentKind)}\n${nextText}`;
+  }
 
   try {
     const openResult = await callSlackApi('conversations.open', slackBotToken, {
