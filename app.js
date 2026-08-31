@@ -14,6 +14,12 @@ const INITIAL_TREATMENT_FOLLOWUP_DELAY_MS = 3 * 60 * 1000;
 const treatmentNotificationTimers = {};
 let entryTimes = {};
 let progressTimes = {};
+let directorStatuses = {
+  '최보빈': '준비중', '김준현': '준비중', '김영윤': '준비중', '박지현': '준비중', '안태윤': '준비중', '황두호': '준비중'
+};
+let directorAutoStatus = {
+  '최보빈': false, '김준현': false, '김영윤': false, '박지현': false, '안태윤': false, '황두호': false
+};
 
 // Connection Status Indicator Updater
 function updateConnectionStatus(status) {
@@ -257,6 +263,28 @@ function loadStateFromLocalStorage() {
     }
   }
 
+  // Load doctor statuses
+  const savedStatuses = localStorage.getItem('clinic_director_statuses');
+  if (savedStatuses) {
+    try {
+      const parsed = JSON.parse(savedStatuses);
+      Object.assign(directorStatuses, parsed);
+    } catch (e) {
+      console.error('Error parsing saved doctor statuses:', e);
+    }
+  }
+
+  // Load doctor auto status mode
+  const savedAutoStatuses = localStorage.getItem('clinic_director_auto_status');
+  if (savedAutoStatuses) {
+    try {
+      const parsed = JSON.parse(savedAutoStatuses);
+      Object.assign(directorAutoStatus, parsed);
+    } catch (e) {
+      console.error('Error parsing saved doctor auto statuses:', e);
+    }
+  }
+
   // Load entry times
   const savedEntryTimes = localStorage.getItem('clinic_entry_times');
   if (savedEntryTimes) {
@@ -300,6 +328,8 @@ async function initApp() {
         if (dbData.state) Object.assign(state, dbData.state);
         if (dbData.leaveTimes) Object.assign(leaveTimes, dbData.leaveTimes);
         if (dbData.offDutyDirectors) Object.assign(offDutyDirectors, dbData.offDutyDirectors);
+        if (dbData.directorStatuses) Object.assign(directorStatuses, dbData.directorStatuses);
+        if (dbData.directorAutoStatus) Object.assign(directorAutoStatus, dbData.directorAutoStatus);
         if (dbData.rowDirectorsFloor1) Object.assign(rowDirectorsFloor1, dbData.rowDirectorsFloor1);
         if (dbData.rowDirectorsFloor2) Object.assign(rowDirectorsFloor2, dbData.rowDirectorsFloor2);
         if (dbData.entryTimes) Object.assign(entryTimes, dbData.entryTimes);
@@ -410,6 +440,8 @@ function setupSupabaseRealtime() {
           if (newData.state) Object.assign(state, newData.state);
           if (newData.leaveTimes) Object.assign(leaveTimes, newData.leaveTimes);
           if (newData.offDutyDirectors) Object.assign(offDutyDirectors, newData.offDutyDirectors);
+          if (newData.directorStatuses) Object.assign(directorStatuses, newData.directorStatuses);
+          if (newData.directorAutoStatus) Object.assign(directorAutoStatus, newData.directorAutoStatus);
           if (newData.rowDirectorsFloor1) Object.assign(rowDirectorsFloor1, newData.rowDirectorsFloor1);
           if (newData.rowDirectorsFloor2) Object.assign(rowDirectorsFloor2, newData.rowDirectorsFloor2);
           if (newData.entryTimes) Object.assign(entryTimes, newData.entryTimes);
@@ -564,6 +596,8 @@ async function saveStateField(path, value) {
   localStorage.setItem('clinic_treatment_state', JSON.stringify(state));
   localStorage.setItem('clinic_leave_times', JSON.stringify(leaveTimes));
   localStorage.setItem('clinic_off_duty_directors', JSON.stringify(offDutyDirectors));
+  localStorage.setItem('clinic_director_statuses', JSON.stringify(directorStatuses));
+  localStorage.setItem('clinic_director_auto_status', JSON.stringify(directorAutoStatus));
   localStorage.setItem('clinic_row_directors_floor1', JSON.stringify(rowDirectorsFloor1));
   localStorage.setItem('clinic_row_directors_floor2', JSON.stringify(rowDirectorsFloor2));
   localStorage.setItem('clinic_entry_times', JSON.stringify(entryTimes));
@@ -729,6 +763,72 @@ function updateUI() {
     if (cell2) cell2.setAttribute('draggable', activeTab !== 'all' ? 'true' : 'false');
   }
 
+  // Helper to update doctor left cell status border and badge
+  function updateDoctorLeftCellStatus(cell, statusBadge, docName, isOff) {
+    if (!cell) return;
+    
+    // Reset status-specific classes
+    cell.classList.remove('status-red', 'status-yellow', 'status-green');
+    if (statusBadge) {
+      statusBadge.classList.remove('status-red', 'status-yellow', 'status-green');
+      statusBadge.textContent = '';
+      statusBadge.style.display = isOff ? 'none' : 'block';
+    }
+    
+    if (isOff) return;
+    
+    // 1. Determine if the doctor is currently in progress
+    let isInProgress = false;
+    let progressVal = null;
+    const wards = ['female', 'male', 'secondFloor'];
+    for (const w of wards) {
+      if (state[w] && Array.isArray(state[w][docName])) {
+        const currentRaw = state[w][docName][0];
+        if (typeof currentRaw === 'string' && currentRaw.endsWith('_progress')) {
+          isInProgress = true;
+          progressVal = currentRaw;
+          break;
+        }
+      }
+    }
+    
+    let computedStatus = '준비중';
+    if (isInProgress) {
+      let cleanVal = progressVal.slice(0, -9);
+      if (cleanVal.endsWith('_reserved')) {
+        cleanVal = cleanVal.slice(0, -9);
+      }
+      if (cleanVal.startsWith('사혈_')) {
+        cleanVal = '사혈';
+      }
+      const consultationTreatments = ['상담', '한약상담', '린다이어트'];
+      if (consultationTreatments.includes(cleanVal)) {
+        computedStatus = '상담중';
+      } else {
+        computedStatus = '치료중';
+      }
+    } else {
+      computedStatus = directorStatuses[docName] || '준비중';
+    }
+    
+    // 2. Set status text and visual classes
+    if (statusBadge) {
+      statusBadge.textContent = computedStatus;
+    }
+    
+    if (computedStatus === '치료중' || computedStatus === '상담중') {
+      cell.classList.add('status-red');
+      if (statusBadge) statusBadge.classList.add('status-red');
+    } else if (computedStatus === '콜 가능') {
+      cell.classList.add('status-green');
+      if (statusBadge) statusBadge.classList.add('status-green');
+    } else {
+      // 자리비움, 차팅중, 준비중
+      cell.classList.add('status-yellow');
+      if (statusBadge) statusBadge.classList.add('status-yellow');
+    }
+  }
+
   // 3. Update 1st Floor tags and leave time buttons
   for (let r = 1; r <= 4; r++) {
     const docName = renderDirectorsFloor1[r];
@@ -737,6 +837,7 @@ function updateUI() {
     ['female', 'male'].forEach(ward => {
       const tag = document.querySelector(`#panel-floor1 .director-tag[data-row="${r}"][data-ward="${ward}"]`);
       const leaveBtn = document.querySelector(`#panel-floor1 .leave-time-btn[data-row="${r}"][data-ward="${ward}"]`);
+      const statusBadge = document.querySelector(`#panel-floor1 .director-status-badge[data-row="${r}"][data-ward="${ward}"]`);
       const cell = tag?.closest('.director-left-cell');
       
       if (tag) {
@@ -763,6 +864,8 @@ function updateUI() {
           leaveBtn.classList.add('active');
         }
       }
+
+      updateDoctorLeftCellStatus(cell, statusBadge, docName, isOff);
     });
   }
 
@@ -770,6 +873,7 @@ function updateUI() {
   for (let r = 1; r <= 4; r++) {
     const tag = document.querySelector(`#panel-floor2 .director-tag[data-row="${r}"]`);
     const leaveBtn = document.querySelector(`#panel-floor2 .leave-time-btn[data-row="${r}"]`);
+    const statusBadge = document.querySelector(`#panel-floor2 .director-status-badge[data-row="${r}"]`);
     const docName = renderDirectorsFloor2[r];
     const isOff = offDutyDirectors[docName];
     const cell = tag?.closest('.director-left-cell');
@@ -798,6 +902,8 @@ function updateUI() {
         leaveBtn.classList.add('active');
       }
     }
+
+    updateDoctorLeftCellStatus(cell, statusBadge, docName, isOff);
   }
 
   // 5. Update female ward slots
@@ -1607,6 +1713,7 @@ function setupEventListeners() {
           if (isProgress) {
             console.log(`[Click Debug] Click on progress item at index 0. Immediate delete.`);
             const clearedVal = state[ward][docName][index];
+            setDoctorStatusOnTreatmentEnd(docName, clearedVal);
             let progressedWard = null;
             if (state[ward][docName][1] === '⏸️') {
               state[ward][docName].splice(0, 2);
@@ -2254,8 +2361,13 @@ function openModal(ward, docName, index) {
     state[ward][d].forEach(val => {
       if (val !== null && val !== undefined) {
         let cleanVal = val;
-        if (typeof val === 'string' && val.endsWith('_progress')) {
-          cleanVal = val.substring(0, val.length - 9);
+        if (typeof val === 'string') {
+          if (val.endsWith('_progress')) {
+            cleanVal = val.substring(0, val.length - 9);
+          }
+          if (cleanVal.endsWith('_reserved')) {
+            cleanVal = cleanVal.substring(0, cleanVal.length - 9);
+          }
         }
         const parsed = parseInt(cleanVal, 10);
         if (!isNaN(parsed) && String(parsed) === String(cleanVal)) {
@@ -2272,8 +2384,13 @@ function openModal(ward, docName, index) {
 
   if (currentVal !== null && currentVal !== undefined) {
     let checkVal = currentVal;
-    if (typeof checkVal === 'string' && checkVal.endsWith('_progress')) {
-      checkVal = checkVal.substring(0, checkVal.length - 9);
+    if (typeof checkVal === 'string') {
+      if (checkVal.endsWith('_progress')) {
+        checkVal = checkVal.substring(0, checkVal.length - 9);
+      }
+      if (checkVal.endsWith('_reserved')) {
+        checkVal = checkVal.substring(0, checkVal.length - 9);
+      }
     }
     if (typeof checkVal === 'string' && checkVal.startsWith('사혈_')) {
       isBloodlettingMode = true;
@@ -2560,6 +2677,34 @@ function closeReservationModal() {
   pendingReservationData = null;
 }
 
+function setDoctorStatusOnTreatmentEnd(docName, clearedVal) {
+  if (!docName || !clearedVal) return;
+  
+  let cleanVal = clearedVal;
+  if (typeof clearedVal === 'string' && clearedVal.endsWith('_progress')) {
+    cleanVal = clearedVal.substring(0, clearedVal.length - 9);
+  }
+  if (typeof cleanVal === 'string' && cleanVal.endsWith('_reserved')) {
+    cleanVal = cleanVal.substring(0, cleanVal.length - 9);
+  }
+  if (typeof cleanVal === 'string' && cleanVal.startsWith('사혈_')) {
+    cleanVal = '사혈';
+  }
+  
+  const consultationTreatments = ['상담', '한약상담', '린다이어트'];
+  
+  if (directorAutoStatus[docName] === true) {
+    directorStatuses[docName] = '콜 가능';
+  } else {
+    if (consultationTreatments.includes(cleanVal)) {
+      directorStatuses[docName] = '차팅중';
+    } else {
+      directorStatuses[docName] = '준비중';
+    }
+  }
+  saveStateField(['directorStatuses', docName], directorStatuses[docName]);
+}
+
 // Clear selected slot (remove magnet and shift remaining left)
 function clearActiveSlot() {
   const { ward, docName, index } = activeSlot;
@@ -2567,6 +2712,7 @@ function clearActiveSlot() {
     const clearedVal = state[ward][docName][index];
     const wasProgress = typeof clearedVal === 'string' && clearedVal.endsWith('_progress');
     if (index === 0 && wasProgress && state[ward][docName][1] === '⏸️') {
+      setDoctorStatusOnTreatmentEnd(docName, clearedVal);
       state[ward][docName].splice(0, 2);
       compactRowState(ward, docName);
       console.log(`[Pause Logic] clearActiveSlot: Cleared current item and encountered pause button at index 1. Removing both and halting progress transition.`);
@@ -2575,6 +2721,7 @@ function clearActiveSlot() {
       compactRowState(ward, docName);
       
       if (wasProgress) {
+        setDoctorStatusOnTreatmentEnd(docName, clearedVal);
         const progressedWard = isMealTreatment(clearedVal)
           ? null
           : handleQueueShift(ward, docName, index, clearedVal);
@@ -2825,6 +2972,8 @@ async function pullStateFromSupabase() {
       if (dbData.state) Object.assign(state, dbData.state);
       if (dbData.leaveTimes) Object.assign(leaveTimes, dbData.leaveTimes);
       if (dbData.offDutyDirectors) Object.assign(offDutyDirectors, dbData.offDutyDirectors);
+      if (dbData.directorStatuses) Object.assign(directorStatuses, dbData.directorStatuses);
+      if (dbData.directorAutoStatus) Object.assign(directorAutoStatus, dbData.directorAutoStatus);
       if (dbData.rowDirectorsFloor1) Object.assign(rowDirectorsFloor1, dbData.rowDirectorsFloor1);
       if (dbData.rowDirectorsFloor2) Object.assign(rowDirectorsFloor2, dbData.rowDirectorsFloor2);
       if (dbData.entryTimes) Object.assign(entryTimes, dbData.entryTimes);

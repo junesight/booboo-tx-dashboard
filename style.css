@@ -2553,3 +2553,72 @@ body.header-collapsed .btn-toggle-header {
   border-color: #10b981 !important;
   background: #ffffff !important;
 }
+
+/* Doctor status row and badge styling */
+.director-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 0.2rem;
+  box-sizing: border-box;
+}
+
+.leave-time-btn {
+  font-size: 0.6rem !important;
+  font-weight: 700;
+  padding: 0.15rem 0.3rem !important;
+  border-radius: 6px !important;
+  border: 1px solid var(--panel-border);
+  background: #f8fafc;
+  color: var(--text-secondary);
+  text-align: center;
+  white-space: nowrap !important;
+  flex: 1;
+  box-sizing: border-box;
+}
+
+.director-status-badge {
+  font-size: 0.6rem !important;
+  font-weight: 700;
+  padding: 0.15rem 0.3rem !important;
+  border-radius: 6px !important;
+  border: 1px solid var(--panel-border);
+  background: #f8fafc;
+  color: var(--text-primary);
+  text-align: center;
+  white-space: nowrap !important;
+  flex: 1.2;
+  box-sizing: border-box;
+}
+
+/* Status colors */
+.director-left-cell.status-red {
+  border: 3px solid #ef4444 !important;
+}
+
+.director-left-cell.status-yellow {
+  border: 3px solid #eab308 !important; /* Golden Yellow */
+}
+
+.director-left-cell.status-green {
+  border: 3px solid #10b981 !important;
+}
+
+.director-status-badge.status-red {
+  background-color: #fee2e2 !important;
+  color: #ef4444 !important;
+  border-color: #fca5a5 !important;
+}
+
+.director-status-badge.status-yellow {
+  background-color: #fef9c3 !important;
+  color: #854d0e !important;
+  border-color: #fde047 !important;
+}
+
+.director-status-badge.status-green {
+  background-color: #d1fae5 !important;
+  color: #059669 !important;
+  border-color: #6ee7b7 !important;
+}
