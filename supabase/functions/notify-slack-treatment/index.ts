@@ -8,6 +8,7 @@ const corsHeaders = {
 
 type TreatmentNotificationRequest = {
   doctorName?: string;
+  slackUserId?: string;
   ward?: string;
   wardLabel?: string;
   notificationType?: 'treatment-start' | 'progress-followup' | 'doctor-call';
@@ -111,7 +112,8 @@ Deno.serve(async (req) => {
     return jsonResponse({ ok: false, error: 'invalid_json' }, 400);
   }
 
-  if (body.doctorName !== '김준현') {
+  const allowedDoctors = ['김준현', '김영윤', '안태윤'];
+  if (!body.doctorName || !allowedDoctors.includes(body.doctorName)) {
     return jsonResponse({ ok: false, error: 'unsupported_doctor' }, 400);
   }
 
@@ -246,9 +248,11 @@ Deno.serve(async (req) => {
       : `${currentTreatmentText(body.currentTreatment, body.currentTreatmentKind)}\n${nextText}`;
   }
 
+  const targetSlackUserId = body.slackUserId || junhyunSlackUserId;
+
   try {
     const openResult = await callSlackApi('conversations.open', slackBotToken, {
-      users: junhyunSlackUserId,
+      users: targetSlackUserId,
     });
     const channelId = openResult.channel?.id;
 

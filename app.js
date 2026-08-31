@@ -2,7 +2,11 @@
 const supabaseUrl = 'https://wfyuxxskwlczoyisdcmy.supabase.co';
 const supabaseKey = 'sb_publishable_yUeE6ynEpbR3Eq-k3Gv1Ew_1DiaJHjz';
 const supabaseClient = window.supabase ? window.supabase.createClient(supabaseUrl, supabaseKey) : null;
-const SLACK_NOTIFY_DOCTOR = '김준현';
+const SLACK_NOTIFY_DOCTORS = ['김준현', '김영윤', '안태윤'];
+const DOCTOR_SLACK_IDS = {
+  '김영윤': 'U0BUKBNEP4G',
+  '안태윤': 'U0BT9KW4P3R'
+};
 const SLACK_NOTIFY_FUNCTION = 'notify-slack-treatment';
 let supabaseChannel = null;
 const INITIAL_TREATMENT_FOLLOWUP_DELAY_MS = 3 * 60 * 1000;
@@ -1172,7 +1176,7 @@ function findNextTreatmentRaw(ward, docName) {
 }
 
 function buildTreatmentNotificationPayload(docName, ward, notificationType = 'progress-followup') {
-  if (docName !== SLACK_NOTIFY_DOCTOR) return null;
+  if (!SLACK_NOTIFY_DOCTORS.includes(docName)) return null;
 
   if (notificationType === 'doctor-call') {
     if (!startTreatmentData) return null;
@@ -1181,6 +1185,7 @@ function buildTreatmentNotificationPayload(docName, ward, notificationType = 'pr
     const currentLabel = formatTreatmentLabel(currentValue);
     return {
       doctorName: docName,
+      slackUserId: DOCTOR_SLACK_IDS[docName] || null,
       ward,
       wardLabel: getWardLabel(ward),
       notificationType: 'doctor-call',
@@ -1209,6 +1214,7 @@ function buildTreatmentNotificationPayload(docName, ward, notificationType = 'pr
 
   return {
     doctorName: docName,
+    slackUserId: DOCTOR_SLACK_IDS[docName] || null,
     ward,
     wardLabel: getWardLabel(ward),
     notificationType,
@@ -1291,7 +1297,7 @@ async function sendTreatmentNotification(docName, ward, notificationType = 'prog
 }
 
 function scheduleTreatmentFollowupNotification(docName, ward, expectedCurrentTreatment, delayMs) {
-  if (docName !== SLACK_NOTIFY_DOCTOR || !expectedCurrentTreatment) return;
+  if (!SLACK_NOTIFY_DOCTORS.includes(docName) || !expectedCurrentTreatment) return;
 
   const timerKey = `${docName}|${ward}`;
   if (treatmentNotificationTimers[timerKey]) {
