@@ -1715,24 +1715,28 @@ function setupEventListeners() {
           if (isProgress) {
             console.log(`[Click Debug] Click on progress item at index 0. Immediate delete.`);
             const clearedVal = state[ward][docName][index];
-            setDoctorStatusOnTreatmentEnd(docName, clearedVal);
             let progressedWard = null;
             if (state[ward][docName][1] === '⏸️') {
+              directorStatuses[docName] = '콜 가능';
+              saveStateField(['directorStatuses', docName], '콜 가능');
               state[ward][docName].splice(0, 2);
               compactRowState(ward, docName);
-              console.log(`[Pause Logic] Click handler: Cleared current item and encountered pause button at index 1. Removing both and halting progress.`);
-            } else if (isMealTreatment(clearedVal)) {
-              state[ward][docName].splice(index, 1);
-              compactRowState(ward, docName);
-            } else if (state[ward][docName][1] && isArrowItem(state[ward][docName][1])) {
-              const arrowVal = state[ward][docName][1];
-              state[ward][docName].splice(0, 2);
-              compactRowState(ward, docName);
-              progressedWard = handleQueueShift(ward, docName, 0, arrowVal);
+              console.log(`[Pause Logic] Click handler: Cleared current item and encountered pause button at index 1. Removing both, setting status to 콜 가능, and halting progress.`);
             } else {
-              state[ward][docName].splice(index, 1);
-              compactRowState(ward, docName);
-              progressedWard = handleQueueShift(ward, docName, index, clearedVal);
+              setDoctorStatusOnTreatmentEnd(docName, clearedVal);
+              if (isMealTreatment(clearedVal)) {
+                state[ward][docName].splice(index, 1);
+                compactRowState(ward, docName);
+              } else if (state[ward][docName][1] && isArrowItem(state[ward][docName][1])) {
+                const arrowVal = state[ward][docName][1];
+                state[ward][docName].splice(0, 2);
+                compactRowState(ward, docName);
+                progressedWard = handleQueueShift(ward, docName, 0, arrowVal);
+              } else {
+                state[ward][docName].splice(index, 1);
+                compactRowState(ward, docName);
+                progressedWard = handleQueueShift(ward, docName, index, clearedVal);
+              }
             }
             if (progressedWard) notifyNextTreatmentStart(docName, progressedWard);
             saveStateForDoctor(docName);
@@ -2716,10 +2720,11 @@ function clearActiveSlot() {
     const clearedVal = state[ward][docName][index];
     const wasProgress = typeof clearedVal === 'string' && clearedVal.endsWith('_progress');
     if (index === 0 && wasProgress && state[ward][docName][1] === '⏸️') {
-      setDoctorStatusOnTreatmentEnd(docName, clearedVal);
+      directorStatuses[docName] = '콜 가능';
+      saveStateField(['directorStatuses', docName], '콜 가능');
       state[ward][docName].splice(0, 2);
       compactRowState(ward, docName);
-      console.log(`[Pause Logic] clearActiveSlot: Cleared current item and encountered pause button at index 1. Removing both and halting progress transition.`);
+      console.log(`[Pause Logic] clearActiveSlot: Cleared current item and encountered pause button at index 1. Removing both, setting status to 콜 가능, and halting progress transition.`);
     } else {
       state[ward][docName].splice(index, 1);
       compactRowState(ward, docName);
