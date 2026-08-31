@@ -318,7 +318,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
     display: grid !important;
     grid-template-columns: minmax(100px, 100px) 1fr 1fr !important;
     column-gap: 2rem !important;
-    row-gap: 1.5rem !important;
+    row-gap: 1.2rem !important;
     position: relative !important;
   }
   body[data-active-tab="all"] #panel-floor2 {
@@ -430,11 +430,6 @@ body[data-active-tab="floor2"] #panel-floor2 {
     z-index: 2 !important;
   }
 
-  /* 💡 1층 단독 뷰: 패널이 전체폭이라 갭 정중앙(+1rem)으로 보정 */
-  body[data-active-tab="floor1"] #panel-floor1::before {
-    left: calc(2rem + 100px + 1rem) !important;
-  }
-
   /* 💡 1층 여자-남자 2px 구분선 */
   #panel-floor1::after {
     content: "" !important;
@@ -465,8 +460,7 @@ body[data-active-tab="floor2"] #panel-floor2 {
     left: calc(2rem + 100px + 1rem) !important;
   }
 
-  /* 💡 1층/2층 단독 뷰: 배경 색상 박스 전체 크기는 유지하되, 내부 패딩과 간격(gap)을 줄여 개별 슬롯의 크기를 키움 */
-  body[data-active-tab="floor1"] .slots-container,
+  /* 💡 2층 단독 뷰: 배경 색상 박스 전체 크기는 유지하되, 내부 패딩과 간격(gap)을 줄여 개별 슬롯의 크기를 키움 */
   body[data-active-tab="floor2"] .slots-container {
     padding: 0.4rem !important;
     gap: 0.35rem !important;
@@ -2124,71 +2118,87 @@ body[data-active-tab="floor2"] #panel-floor2 {
     margin-bottom: 1.2rem;
     padding-bottom: 0.8rem;
   }
-  body[data-active-tab="all"] .board-panel {
+  body[data-active-tab="all"] .board-panel,
+  body[data-active-tab="floor1"] .board-panel {
     padding: 0.6rem 1.2rem !important;
     margin-bottom: 0.6rem !important;
   }
-  body[data-active-tab="all"] .board-grid {
+  body[data-active-tab="all"] .board-grid,
+  body[data-active-tab="floor1"] .board-grid {
     row-gap: 0.4rem !important;
   }
-  body[data-active-tab="all"] .board-grid > * {
+  body[data-active-tab="all"] .board-grid > *,
+  body[data-active-tab="floor1"] .board-grid > * {
     padding-top: 0.25rem !important;
     padding-bottom: 0.25rem !important;
   }
-  body[data-active-tab="all"] .grid-header {
+  body[data-active-tab="all"] .grid-header,
+  body[data-active-tab="floor1"] .grid-header {
     padding-top: 0.2rem !important;
     padding-bottom: 0.3rem !important;
     margin-bottom: 0.3rem !important;
   }
-  body[data-active-tab="all"] .grid-header h2 {
+  body[data-active-tab="all"] .grid-header h2,
+  body[data-active-tab="floor1"] .grid-header h2 {
     font-size: 1.05rem !important;
   }
-  body[data-active-tab="all"] .slots-container {
+  body[data-active-tab="all"] .slots-container,
+  body[data-active-tab="floor1"] .slots-container {
     padding: 0.3rem 0.35rem !important;
     gap: 0.3rem !important;
   }
-  body[data-active-tab="all"] .director-left-cell {
+  body[data-active-tab="all"] .director-left-cell,
+  body[data-active-tab="floor1"] .director-left-cell {
     flex-direction: column !important;
     padding: 0.55rem;
     gap: 0.3rem;
   }
-  body[data-active-tab="all"] .director-tag {
+  body[data-active-tab="all"] .director-tag,
+  body[data-active-tab="floor1"] .director-tag {
     padding: 0.45rem 0.5rem;
     font-size: 1.12rem;
   }
 
-  /* 1층/2층 단독 뷰: director-tag 상하 패딩 여유 있게 */
-  body[data-active-tab="floor1"] .director-tag,
+  /* 2층 단독 뷰: director-tag 상하 패딩 여유 있게 */
   body[data-active-tab="floor2"] .director-tag {
     padding: 0.75rem 0.6rem;
     font-size: 1.2rem;
   }
-  /* 전체보기: 이름-야간 간격 타이트하게 */
-  body[data-active-tab="all"] .director-left-cell {
+  /* 전체보기 및 1층 뷰: 이름-야간 간격 타이트하게 */
+  body[data-active-tab="all"] .director-left-cell,
+  body[data-active-tab="floor1"] .director-left-cell {
     gap: 0.2rem !important;
   }
-  body[data-active-tab="all"] .leave-time-btn {
+  body[data-active-tab="all"] .leave-time-btn,
+  body[data-active-tab="floor1"] .leave-time-btn {
     padding: 0.22rem 0.45rem;
     font-size: 0.7rem;
   }
-  body[data-active-tab="all"] .slot {
+  body[data-active-tab="all"] .slot,
+  body[data-active-tab="floor1"] .slot {
     max-width: 72px !important;
     max-height: 72px !important;
   }
-  body[data-active-tab="all"] .slot-magnet {
+  body[data-active-tab="all"] .slot-magnet,
+  body[data-active-tab="floor1"] .slot-magnet {
     font-size: 2.5rem;
     border-width: 4px;
   }
-  body[data-active-tab="all"] .slot-magnet.text-magnet {
+  body[data-active-tab="all"] .slot-magnet.text-magnet,
+  body[data-active-tab="floor1"] .slot-magnet.text-magnet {
     font-size: 1.15rem;
   }
-  body[data-active-tab="all"] .arrow-subtext {
+  body[data-active-tab="all"] .arrow-subtext,
+  body[data-active-tab="floor1"] .arrow-subtext {
     font-size: 0.78rem;
     margin-top: 0;
   }
   body[data-active-tab="all"] .slot.opt-arrow .slot-magnet,
   body[data-active-tab="all"] .slot.opt-pause .slot-magnet,
-  body[data-active-tab="all"] .slot.opt-meal .slot-magnet {
+  body[data-active-tab="all"] .slot.opt-meal .slot-magnet,
+  body[data-active-tab="floor1"] .slot.opt-arrow .slot-magnet,
+  body[data-active-tab="floor1"] .slot.opt-pause .slot-magnet,
+  body[data-active-tab="floor1"] .slot.opt-meal .slot-magnet {
     font-size: 2.2rem !important;
   }
 }
@@ -2473,7 +2483,7 @@ body.header-collapsed .btn-toggle-header {
   }
 
   body[data-active-tab="floor2"] #panel-floor2 .director-left-cell {
-    padding: 1.2rem !important;
+    padding: 1.2rem 0.5rem !important;
   }
 
   body[data-active-tab="floor2"] #panel-floor2 .director-tag {
@@ -2482,8 +2492,13 @@ body.header-collapsed .btn-toggle-header {
   }
 
   body[data-active-tab="floor2"] #panel-floor2 .leave-time-btn {
-    padding: 0.35rem 0.7rem !important;
-    font-size: 1.0rem !important;
+    padding: 0.3rem 0.3rem !important;
+    font-size: 0.88rem !important;
+  }
+
+  body[data-active-tab="floor2"] #panel-floor2 .director-status-badge {
+    padding: 0.3rem 0.3rem !important;
+    font-size: 0.88rem !important;
   }
 
   body[data-active-tab="floor2"] #panel-floor2 .slots-container {
