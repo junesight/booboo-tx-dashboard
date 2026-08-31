@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
     return jsonResponse({ ok: false, error: 'invalid_json' }, 400);
   }
 
-  const allowedDoctors = ['김준현', '김영윤', '안태윤'];
+  const allowedDoctors = ['김준현', '김영윤', '안태윤', '최보빈'];
   if (!body.doctorName || !allowedDoctors.includes(body.doctorName)) {
     return jsonResponse({ ok: false, error: 'unsupported_doctor' }, 400);
   }
