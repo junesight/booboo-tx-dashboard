@@ -15,7 +15,7 @@ const treatmentNotificationTimers = {};
 let entryTimes = {};
 let progressTimes = {};
 let directorStatuses = {
-  '최보빈': '준비중', '김준현': '준비중', '김영윤': '준비중', '박지현': '준비중', '안태윤': '준비중', '황두호': '준비중'
+  '최보빈': '콜 가능', '김준현': '콜 가능', '김영윤': '콜 가능', '박지현': '콜 가능', '안태윤': '콜 가능', '황두호': '콜 가능'
 };
 let directorAutoStatus = {
   '최보빈': false, '김준현': false, '김영윤': false, '박지현': false, '안태윤': false, '황두호': false
@@ -810,7 +810,7 @@ function updateUI() {
         computedStatus = '치료중';
       }
     } else {
-      computedStatus = directorStatuses[docName] || '준비중';
+      computedStatus = directorStatuses[docName] || '콜 가능';
     }
     
     // 2. Set status text and visual classes
@@ -2753,8 +2753,10 @@ function resetAllSlots() {
     state.female[d] = Array(8).fill(null);
     state.male[d] = Array(8).fill(null);
     state.secondFloor[d] = Array(8).fill(null);
+    directorStatuses[d] = '콜 가능';
   });
   saveStateField(['state'], state);
+  saveStateField(['directorStatuses'], directorStatuses);
   updateUI();
 }
 
@@ -3131,6 +3133,12 @@ async function syncScheduleFromSupabase({ silent = false } = {}) {
     allSorted.forEach(info => {
       leaveTimes[info.name] = info.leaveTime;
       offDutyDirectors[info.name] = info.isOff;
+    });
+
+    // Reset all doctors' statuses to '콜 가능' for the new day
+    const availableDoctors = ['최보빈', '김준현', '김영윤', '박지현', '안태윤', '황두호'];
+    availableDoctors.forEach(doc => {
+      directorStatuses[doc] = '콜 가능';
     });
     
     // Save to Supabase and localStorage
