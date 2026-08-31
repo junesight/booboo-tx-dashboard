@@ -802,7 +802,9 @@ function updateUI() {
         cleanVal = '사혈';
       }
       const consultationTreatments = ['상담', '한약상담', '린다이어트'];
-      if (consultationTreatments.includes(cleanVal)) {
+      if (cleanVal === '식사') {
+        computedStatus = '자리비움';
+      } else if (consultationTreatments.includes(cleanVal)) {
         computedStatus = '상담중';
       } else {
         computedStatus = '치료중';
@@ -2693,7 +2695,9 @@ function setDoctorStatusOnTreatmentEnd(docName, clearedVal) {
   
   const consultationTreatments = ['상담', '한약상담', '린다이어트'];
   
-  if (directorAutoStatus[docName] === true) {
+  if (cleanVal === '식사') {
+    directorStatuses[docName] = '자리비움';
+  } else if (directorAutoStatus[docName] === true) {
     directorStatuses[docName] = '콜 가능';
   } else {
     if (consultationTreatments.includes(cleanVal)) {
