@@ -2616,8 +2616,8 @@ body.header-collapsed .btn-toggle-header {
   border: 3px solid #eab308 !important; /* Golden Yellow */
 }
 
-.director-left-cell.status-green {
-  border: 3px solid #10b981 !important;
+.director-left-cell.status-green:not(.status-green-blink) {
+  border: 3.5px solid #10b981 !important;
 }
 
 .director-status-badge.status-red {
@@ -2632,7 +2632,7 @@ body.header-collapsed .btn-toggle-header {
   border-color: #fde047 !important;
 }
 
-.director-status-badge.status-green {
+.director-status-badge.status-green:not(.status-green-blink) {
   background-color: #d1fae5 !important;
   color: #059669 !important;
   border-color: #6ee7b7 !important;
@@ -2641,38 +2641,40 @@ body.header-collapsed .btn-toggle-header {
 /* 10-second Eye-catching Blink Animation when transitioning to '콜 가능' */
 @keyframes pulseGreenBlink {
   0%, 100% {
-    border: 3.5px solid #10b981 !important;
-    box-shadow: 0 0 16px 4px rgba(16, 185, 129, 0.85) !important;
-    background-color: rgba(209, 250, 229, 0.35) !important;
+    border-color: #10b981;
+    box-shadow: 0 0 18px 5px rgba(16, 185, 129, 0.85);
+    background-color: rgba(209, 250, 229, 0.35);
   }
   50% {
-    border: 3.5px solid transparent !important;
-    box-shadow: none !important;
-    background-color: transparent !important;
+    border-color: transparent;
+    box-shadow: 0 0 0 0 transparent;
+    background-color: transparent;
   }
 }
 
 @keyframes badgeGreenBlink {
   0%, 100% {
-    background-color: #10b981 !important;
-    color: #ffffff !important;
-    border-color: #047857 !important;
-    transform: scale(1.06);
-    box-shadow: 0 0 10px rgba(16, 185, 129, 0.8) !important;
+    background-color: #10b981;
+    color: #ffffff;
+    border-color: #047857;
+    transform: scale(1.08);
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.8);
   }
   50% {
-    background-color: #d1fae5 !important;
-    color: #059669 !important;
-    border-color: #6ee7b7 !important;
+    background-color: #d1fae5;
+    color: #059669;
+    border-color: #6ee7b7;
     transform: scale(1);
-    box-shadow: none !important;
+    box-shadow: none;
   }
 }
 
 .director-left-cell.status-green-blink {
-  animation: pulseGreenBlink 0.9s infinite ease-in-out !important;
+  border-width: 3.5px !important;
+  border-style: solid !important;
+  animation: pulseGreenBlink 0.8s infinite ease-in-out !important;
 }
 
 .director-status-badge.status-green-blink {
-  animation: badgeGreenBlink 0.9s infinite ease-in-out !important;
+  animation: badgeGreenBlink 0.8s infinite ease-in-out !important;
 }
