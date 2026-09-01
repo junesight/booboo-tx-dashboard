@@ -20,6 +20,8 @@ let directorStatuses = {
 let directorAutoStatus = {
   '최보빈': false, '김준현': false, '김영윤': false, '박지현': false, '안태윤': false, '황두호': false
 };
+const doctorCallAvailableTimestamps = {};
+const prevDoctorComputedStatuses = {};
 
 // Connection Status Indicator Updater
 function updateConnectionStatus(status) {
@@ -816,18 +818,42 @@ function updateUI() {
     // 2. Set status text and visual classes
     if (statusBadge) {
       statusBadge.textContent = computedStatus;
+      statusBadge.dataset.doc = docName;
     }
     
     if (computedStatus === '치료중' || computedStatus === '상담중') {
       cell.classList.add('status-red');
       if (statusBadge) statusBadge.classList.add('status-red');
+      prevDoctorComputedStatuses[docName] = computedStatus;
+      delete doctorCallAvailableTimestamps[docName];
+      cell.classList.remove('status-green-blink');
+      if (statusBadge) statusBadge.classList.remove('status-green-blink');
     } else if (computedStatus === '콜 가능') {
       cell.classList.add('status-green');
       if (statusBadge) statusBadge.classList.add('status-green');
+      
+      const prevStatus = prevDoctorComputedStatuses[docName];
+      if (prevStatus && prevStatus !== '콜 가능') {
+        doctorCallAvailableTimestamps[docName] = Date.now();
+      }
+      prevDoctorComputedStatuses[docName] = computedStatus;
+      
+      const isRecentlyAvailable = doctorCallAvailableTimestamps[docName] && (Date.now() - doctorCallAvailableTimestamps[docName] < 10000);
+      if (isRecentlyAvailable) {
+        cell.classList.add('status-green-blink');
+        if (statusBadge) statusBadge.classList.add('status-green-blink');
+      } else {
+        cell.classList.remove('status-green-blink');
+        if (statusBadge) statusBadge.classList.remove('status-green-blink');
+      }
     } else {
       // 자리비움, 차팅중, 준비중
       cell.classList.add('status-yellow');
       if (statusBadge) statusBadge.classList.add('status-yellow');
+      prevDoctorComputedStatuses[docName] = computedStatus;
+      delete doctorCallAvailableTimestamps[docName];
+      cell.classList.remove('status-green-blink');
+      if (statusBadge) statusBadge.classList.remove('status-green-blink');
     }
   }
 
@@ -2827,6 +2853,22 @@ function updateElapsedTimesDisplay() {
   });
 }
 
+// Check and clear expired 10s status blink
+function updateDoctorStatusBlink() {
+  const now = Date.now();
+  const blinkingBadges = document.querySelectorAll('.director-status-badge.status-green-blink');
+  blinkingBadges.forEach(badge => {
+    const docName = badge.dataset.doc;
+    if (docName && doctorCallAvailableTimestamps[docName]) {
+      if (now - doctorCallAvailableTimestamps[docName] >= 10000) {
+        const cell = badge.closest('.director-left-cell');
+        if (cell) cell.classList.remove('status-green-blink');
+        badge.classList.remove('status-green-blink');
+      }
+    }
+  });
+}
+
 // Start Clock
 function startClock() {
   function tick() {
@@ -2853,6 +2895,9 @@ function startClock() {
     
     // Dynamically update elapsed minutes badges
     updateElapsedTimesDisplay();
+
+    // Dynamically update 10s status blink
+    updateDoctorStatusBlink();
   }
   
   tick();
