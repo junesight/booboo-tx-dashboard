@@ -838,7 +838,7 @@ function updateUI() {
       }
       prevDoctorComputedStatuses[docName] = computedStatus;
       
-      const isRecentlyAvailable = doctorCallAvailableTimestamps[docName] && (Date.now() - doctorCallAvailableTimestamps[docName] < 10000);
+      const isRecentlyAvailable = doctorCallAvailableTimestamps[docName] && (Date.now() - doctorCallAvailableTimestamps[docName] < 30000);
       if (isRecentlyAvailable) {
         cell.classList.add('status-green-blink');
         if (statusBadge) statusBadge.classList.add('status-green-blink');
@@ -2853,14 +2853,14 @@ function updateElapsedTimesDisplay() {
   });
 }
 
-// Check and clear expired 10s status blink
+// Check and clear expired 30s status blink
 function updateDoctorStatusBlink() {
   const now = Date.now();
   const blinkingBadges = document.querySelectorAll('.director-status-badge.status-green-blink');
   blinkingBadges.forEach(badge => {
     const docName = badge.dataset.doc;
     if (docName && doctorCallAvailableTimestamps[docName]) {
-      if (now - doctorCallAvailableTimestamps[docName] >= 10000) {
+      if (now - doctorCallAvailableTimestamps[docName] >= 30000) {
         const cell = badge.closest('.director-left-cell');
         if (cell) cell.classList.remove('status-green-blink');
         badge.classList.remove('status-green-blink');
