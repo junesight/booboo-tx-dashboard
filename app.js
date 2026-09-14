@@ -843,9 +843,9 @@ function updateUI() {
     if (!cell) return;
     
     // Reset status-specific classes
-    cell.classList.remove('status-red', 'status-yellow', 'status-green');
+    cell.classList.remove('status-red', 'status-yellow', 'status-green', 'status-orange');
     if (statusBadge) {
-      statusBadge.classList.remove('status-red', 'status-yellow', 'status-green');
+      statusBadge.classList.remove('status-red', 'status-yellow', 'status-green', 'status-orange');
       statusBadge.textContent = '';
       statusBadge.style.display = isOff ? 'none' : 'block';
     }
@@ -919,8 +919,15 @@ function updateUI() {
         cell.classList.remove('status-green-blink');
         if (statusBadge) statusBadge.classList.remove('status-green-blink');
       }
+    } else if (computedStatus === '자리비움') {
+      cell.classList.add('status-orange');
+      if (statusBadge) statusBadge.classList.add('status-orange');
+      prevDoctorComputedStatuses[docName] = computedStatus;
+      delete doctorCallAvailableTimestamps[docName];
+      cell.classList.remove('status-green-blink');
+      if (statusBadge) statusBadge.classList.remove('status-green-blink');
     } else {
-      // 자리비움, 차팅중, 준비중
+      // 차팅중, 준비중
       cell.classList.add('status-yellow');
       if (statusBadge) statusBadge.classList.add('status-yellow');
       prevDoctorComputedStatuses[docName] = computedStatus;
@@ -1247,7 +1254,10 @@ function updateSlotDisplay(slotEl, val, index) {
     let reservedBadgeHtml = '';
     if (isCallReserved) {
       magnetClass += ' call-reserved';
-      reservedBadgeHtml = `<span class="slot-call-reserved-badge">🔔 콜예약</span>`;
+      const remainingSecs = Math.max(0, Math.ceil((120000 - (Date.now() - reservation.timestamp)) / 1000));
+      const mins = Math.floor(remainingSecs / 60);
+      const secs = remainingSecs % 60;
+      reservedBadgeHtml = `<span class="slot-call-reserved-badge" data-doc="${docName}">🔔 콜예약 ${mins}:${String(secs).padStart(2, '0')}</span>`;
     }
     
     let elapsedBadgeHtml = '';
@@ -1757,7 +1767,11 @@ function openCallReserveModal(ward, docName, index, val, currentStatus) {
   pendingCallReserveData = { ward, docName, index, val };
   
   const modal = document.getElementById('call-reserve-modal');
+  const titleEl = modal ? modal.querySelector('.modal-title') : null;
   const textEl = document.getElementById('call-reserve-doctor-text');
+  const msgEl = document.getElementById('call-reserve-message-text');
+  const btnConfirm = document.getElementById('btn-call-reserve-confirm');
+  const btnCancel = document.getElementById('btn-call-reserve-cancel');
   
   let displayVal = val;
   if (typeof val === 'string' && val.endsWith('_reserved')) {
@@ -1768,6 +1782,24 @@ function openCallReserveModal(ward, docName, index, val, currentStatus) {
   
   if (textEl) {
     textEl.innerHTML = `[${docName} 원장님 (${currentStatus}) - ${targetName}]`;
+  }
+
+  if (currentStatus === '자리비움') {
+    if (titleEl) titleEl.textContent = '원장님 호출 불가';
+    if (msgEl) msgEl.innerHTML = '콜 가능 상태가 아닙니다.';
+    if (btnConfirm) btnConfirm.style.display = 'none';
+    if (btnCancel) {
+      btnCancel.textContent = '확인';
+      btnCancel.style.display = 'block';
+    }
+  } else {
+    if (titleEl) titleEl.textContent = '원장님 호출 예약';
+    if (msgEl) msgEl.innerHTML = '콜 가능 상태가 아닙니다.<br>콜 가능 상태로 바뀌면 곧바로 콜을 보내도록 예약하시겠습니까?';
+    if (btnConfirm) btnConfirm.style.display = 'block';
+    if (btnCancel) {
+      btnCancel.textContent = '일단 취소 후 다시 콜';
+      btnCancel.style.display = 'block';
+    }
   }
   
   if (modal) modal.classList.add('active');
@@ -1789,7 +1821,7 @@ async function checkAndTriggerReservedCalls() {
     const reservation = reservedDoctorCalls[docName];
     if (!reservation) continue;
 
-    const { ward, val } = reservation;
+    const { ward, val, timestamp } = reservation;
     const row = state[ward]?.[docName];
     if (!Array.isArray(row)) {
       delete reservedDoctorCalls[docName];
@@ -1839,7 +1871,19 @@ async function checkAndTriggerReservedCalls() {
       continue;
     }
 
-    const computedStatus = getDoctorComputedStatus(docName);
+    let computedStatus = getDoctorComputedStatus(docName);
+
+    // If 2 minutes (120,000ms) elapsed since reservation and doctor is '차팅중' or '준비중', auto-switch to '콜 가능'
+    if ((computedStatus === '차팅중' || computedStatus === '준비중') && timestamp && (Date.now() - timestamp >= 120000)) {
+      console.log(`[Call Reservation] Web Tracker: 2 minutes elapsed for ${docName} (${computedStatus}). Auto-switching to '콜 가능'...`);
+      directorStatuses[docName] = '콜 가능';
+      localStorage.setItem('clinic_director_statuses', JSON.stringify(directorStatuses));
+      if (supabaseClient) {
+        saveStateField(['directorStatuses', docName], '콜 가능');
+      }
+      computedStatus = getDoctorComputedStatus(docName);
+    }
+
     if (computedStatus === '콜 가능') {
       isTriggeringReservedCall = true;
       console.log(`[Call Reservation] Web Tracker: Doctor ${docName} is '콜 가능'. Auto-firing reserved call for ${ward} bed ${val}...`);
@@ -1869,7 +1913,8 @@ async function checkAndTriggerReservedCalls() {
           await Promise.all([
             saveStateField(['state', ward, docName], state[ward][docName]),
             saveStateField(['callSignal'], callSignal),
-            saveStateField(['reservedDoctorCalls'], reservedDoctorCalls)
+            saveStateField(['reservedDoctorCalls'], reservedDoctorCalls),
+            saveStateField(['directorStatuses', docName], '콜 가능')
           ]);
         } catch (e) {
           console.error('[Call Reservation] Error saving auto-triggered call:', e);
@@ -2512,8 +2557,13 @@ function setupEventListeners() {
         const { ward, docName, index, val } = startTreatmentData;
         const currentStatus = getDoctorComputedStatus(docName);
         
-        // If doctor is NOT in '콜 가능' status (Yellow: 차팅중, 자리비움, 준비중, etc.), prompt for Call Reservation
-        if (currentStatus !== '콜 가능') {
+        let cleanVal = String(val);
+        if (cleanVal.endsWith('_reserved')) cleanVal = cleanVal.slice(0, -9);
+        if (cleanVal.startsWith('사혈_')) cleanVal = cleanVal.slice(3);
+        const isMeal = (cleanVal === '식사');
+
+        // If doctor is NOT in '콜 가능' status and item is NOT '식사', prompt for Call Reservation / Notice
+        if (!isMeal && currentStatus !== '콜 가능') {
           closeStartTreatmentModal();
           openCallReserveModal(ward, docName, index, val, currentStatus);
           return;
@@ -3140,6 +3190,18 @@ function updateElapsedTimesDisplay() {
       badge.textContent = `${mins}:${String(secs).padStart(2, '0')}`;
     }
   });
+
+  const callReserveBadges = document.querySelectorAll('.slot-call-reserved-badge');
+  callReserveBadges.forEach(badge => {
+    const docName = badge.dataset.doc;
+    const reservation = reservedDoctorCalls[docName];
+    if (reservation && reservation.timestamp) {
+      const remainingSecs = Math.max(0, Math.ceil((120000 - (Date.now() - reservation.timestamp)) / 1000));
+      const mins = Math.floor(remainingSecs / 60);
+      const secs = remainingSecs % 60;
+      badge.textContent = `🔔 콜예약 ${mins}:${String(secs).padStart(2, '0')}`;
+    }
+  });
 }
 
 // Check and clear expired 30s status blink
@@ -3187,6 +3249,9 @@ function startClock() {
 
     // Dynamically update 10s status blink
     updateDoctorStatusBlink();
+
+    // Dynamically check 2-min reservation expiration and trigger
+    checkAndTriggerReservedCalls();
   }
   
   tick();
