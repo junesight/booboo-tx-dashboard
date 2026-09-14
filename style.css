@@ -1050,6 +1050,44 @@ body[data-active-tab="floor2"] #panel-floor2 {
   position: relative;
 }
 
+/* Call Reserved (콜 예약 대기) Magnet State & Animations */
+.slot-magnet.call-reserved {
+  border-color: #f59e0b !important;
+  color: #b45309 !important;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.4), 0 4px 10px rgba(245, 158, 11, 0.3) !important;
+  animation: callReservedPulse 1.8s infinite ease-in-out;
+  position: relative;
+}
+
+@keyframes callReservedPulse {
+  0% {
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.5), 0 2px 6px rgba(245, 158, 11, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(245, 158, 11, 0.85), 0 4px 12px rgba(245, 158, 11, 0.45);
+  }
+  100% {
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.5), 0 2px 6px rgba(245, 158, 11, 0.2);
+  }
+}
+
+.slot-call-reserved-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #f59e0b;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 0.15rem 0.4rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.25);
+  pointer-events: none;
+  z-index: 10;
+  white-space: nowrap;
+  animation: callReservedPulse 1.8s infinite ease-in-out;
+}
+
 .slot-magnet:not(.text-magnet).in-progress {
   border-color: #ef4444 !important;
   color: #ef4444 !important;

@@ -22,6 +22,40 @@ let directorAutoStatus = {
 };
 const doctorCallAvailableTimestamps = {};
 const prevDoctorComputedStatuses = {};
+let reservedDoctorCalls = {};
+let pendingCallReserveData = null;
+let isTriggeringReservedCall = false;
+
+// Compute real-time comprehensive doctor status
+function getDoctorComputedStatus(docName) {
+  if (offDutyDirectors[docName]) return '휴진';
+  
+  let isInProgress = false;
+  let progressVal = null;
+  const wards = ['female', 'male', 'secondFloor'];
+  for (const w of wards) {
+    if (state[w] && Array.isArray(state[w][docName])) {
+      const currentRaw = state[w][docName][0];
+      if (typeof currentRaw === 'string' && currentRaw.endsWith('_progress')) {
+        isInProgress = true;
+        progressVal = currentRaw;
+        break;
+      }
+    }
+  }
+  
+  if (isInProgress) {
+    let cleanVal = progressVal.slice(0, -9);
+    if (cleanVal.endsWith('_reserved')) cleanVal = cleanVal.slice(0, -9);
+    if (cleanVal.startsWith('사혈_')) cleanVal = '사혈';
+    const consultationTreatments = ['상담', '한약상담', '린다이어트'];
+    if (cleanVal === '식사') return '자리비움';
+    if (consultationTreatments.includes(cleanVal)) return '상담중';
+    return '치료중';
+  }
+  
+  return directorStatuses[docName] || '콜 가능';
+}
 
 // UI Interactivity & Sync Protection Flags
 let isPendingUIUpdate = false;
@@ -37,7 +71,8 @@ function isAnyModalActive() {
     document.getElementById('cancel-progress-modal'),
     document.getElementById('start-treatment-modal'),
     document.getElementById('custom-confirm-modal'),
-    document.getElementById('reservation-modal')
+    document.getElementById('reservation-modal'),
+    document.getElementById('call-reserve-modal')
   ];
   return modalOverlays.some(m => m && m.classList.contains('active'));
 }
@@ -335,6 +370,16 @@ function loadStateFromLocalStorage() {
       console.error('Error parsing saved progress times:', e);
     }
   }
+
+  // Load reserved doctor calls
+  const savedReservedCalls = localStorage.getItem('clinic_reserved_doctor_calls');
+  if (savedReservedCalls) {
+    try {
+      reservedDoctorCalls = JSON.parse(savedReservedCalls) || {};
+    } catch (e) {
+      console.error('Error parsing saved reserved doctor calls:', e);
+    }
+  }
 }
 
 // Load state from Supabase or localStorage on init
@@ -363,6 +408,7 @@ async function initApp() {
         if (dbData.rowDirectorsFloor2) Object.assign(rowDirectorsFloor2, dbData.rowDirectorsFloor2);
         if (dbData.entryTimes) Object.assign(entryTimes, dbData.entryTimes);
         if (dbData.progressTimes) Object.assign(progressTimes, dbData.progressTimes);
+        if (dbData.reservedDoctorCalls) Object.assign(reservedDoctorCalls, dbData.reservedDoctorCalls);
       } else {
         isLoadedFromSupabase = false;
         showOfflineBanner();
@@ -475,8 +521,12 @@ function setupSupabaseRealtime() {
           if (newData.rowDirectorsFloor2) Object.assign(rowDirectorsFloor2, newData.rowDirectorsFloor2);
           if (newData.entryTimes) Object.assign(entryTimes, newData.entryTimes);
           if (newData.progressTimes) Object.assign(progressTimes, newData.progressTimes);
+          if (newData.reservedDoctorCalls !== undefined) {
+            reservedDoctorCalls = Object.assign({}, newData.reservedDoctorCalls || {});
+          }
           
           sanitizeState(false);
+          checkAndTriggerReservedCalls();
           
           if (isAnyModalActive() || isDraggingSlot) {
             isPendingUIUpdate = true;
@@ -1190,6 +1240,16 @@ function updateSlotDisplay(slotEl, val, index) {
     const isArrow = (v) => ['▶','◀','▲','▼','▼여','▼남','➡️','⬅️','⬆️','⬇️','→','←','↑','↓'].includes(v);
     const shouldShowTime = lookupVal !== '/' && lookupVal !== '⏸️' && !isArrow(lookupVal);
     
+    // Check if there is an active call reservation for this slot
+    const reservation = reservedDoctorCalls[docName];
+    const isCallReserved = reservation && reservation.ward === ward && String(reservation.val) === String(lookupVal) && !isProgress;
+    
+    let reservedBadgeHtml = '';
+    if (isCallReserved) {
+      magnetClass += ' call-reserved';
+      reservedBadgeHtml = `<span class="slot-call-reserved-badge">🔔 콜예약</span>`;
+    }
+    
     let elapsedBadgeHtml = '';
     let progressBadgeHtml = '';
     if (shouldShowTime && docName && ward) {
@@ -1215,7 +1275,7 @@ function updateSlotDisplay(slotEl, val, index) {
       }
     }
 
-    slotEl.innerHTML = `<div class="${magnetClass}" draggable="true">${displayVal}${progressBadgeHtml}${elapsedBadgeHtml}</div>`;
+    slotEl.innerHTML = `<div class="${magnetClass}" draggable="true">${displayVal}${progressBadgeHtml}${elapsedBadgeHtml}${reservedBadgeHtml}</div>`;
     
   } else {
     slotEl.innerHTML = '';
@@ -1690,6 +1750,104 @@ function closeStartTreatmentModal() {
   }
   startTreatmentData = null;
   flushPendingUIUpdateIfNeeded();
+}
+
+// Call Reservation Modal Functions
+function openCallReserveModal(ward, docName, index, val, currentStatus) {
+  pendingCallReserveData = { ward, docName, index, val };
+  
+  const modal = document.getElementById('call-reserve-modal');
+  const textEl = document.getElementById('call-reserve-doctor-text');
+  
+  let displayVal = val;
+  if (typeof val === 'string' && val.endsWith('_reserved')) {
+    displayVal = val.substring(0, val.length - 9);
+  }
+  const parsed = parseInt(displayVal, 10);
+  const targetName = isNaN(parsed) ? `${displayVal}` : `${displayVal}번 베드`;
+  
+  if (textEl) {
+    textEl.innerHTML = `[${docName} 원장님 (${currentStatus}) - ${targetName}]`;
+  }
+  
+  if (modal) modal.classList.add('active');
+}
+
+function closeCallReserveModal() {
+  const modal = document.getElementById('call-reserve-modal');
+  if (modal) modal.classList.remove('active');
+  pendingCallReserveData = null;
+  flushPendingUIUpdateIfNeeded();
+}
+
+// Check and automatically fire reserved doctor calls when doctor status transitions to '콜 가능'
+async function checkAndTriggerReservedCalls() {
+  if (isTriggeringReservedCall) return;
+  
+  const allDocs = ['최보빈', '김준현', '김영윤', '박지현', '안태윤', '황두호'];
+  for (const docName of allDocs) {
+    const reservation = reservedDoctorCalls[docName];
+    if (reservation) {
+      const computedStatus = getDoctorComputedStatus(docName);
+      if (computedStatus === '콜 가능') {
+        const { ward, val } = reservation;
+        const row = state[ward]?.[docName];
+        if (Array.isArray(row)) {
+          const currentIdx = row.findIndex(v => {
+            if (v === null || v === undefined) return false;
+            let clean = v;
+            if (typeof clean === 'string' && clean.endsWith('_progress')) clean = clean.substring(0, clean.length - 9);
+            return String(clean) === String(val);
+          });
+          
+          if (currentIdx !== -1) {
+            isTriggeringReservedCall = true;
+            console.log(`[Call Reservation] Doctor ${docName} is now '콜 가능'. Auto-firing reserved call for ${ward} bed ${val}...`);
+            
+            // Transition slot to progress
+            state[ward][docName][currentIdx] = String(val) + '_progress';
+            clearOtherWardsProgress(docName, ward);
+            notifyInitialTreatmentStart(docName, ward);
+            
+            // Send doctor call notification
+            sendTreatmentNotification(docName, ward, 'doctor-call');
+            
+            const callSignal = {
+              docName: docName,
+              bed: val,
+              timestamp: Date.now()
+            };
+            
+            localStorage.setItem('clinic_call_signal', JSON.stringify(callSignal));
+            delete reservedDoctorCalls[docName];
+            localStorage.setItem('clinic_reserved_doctor_calls', JSON.stringify(reservedDoctorCalls));
+            
+            if (supabaseClient) {
+              try {
+                await Promise.all([
+                  saveStateField(['state', ward, docName], state[ward][docName]),
+                  saveStateField(['callSignal'], callSignal),
+                  saveStateField(['reservedDoctorCalls', docName], null)
+                ]);
+              } catch (e) {
+                console.error('[Call Reservation] Error saving auto-triggered call:', e);
+              }
+            }
+            
+            updateUI();
+            isTriggeringReservedCall = false;
+          } else {
+            // Slot was removed, clean up stale reservation
+            delete reservedDoctorCalls[docName];
+            localStorage.setItem('clinic_reserved_doctor_calls', JSON.stringify(reservedDoctorCalls));
+            if (supabaseClient) {
+              saveStateField(['reservedDoctorCalls', docName], null);
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 // Setup Event Listeners
@@ -2270,6 +2428,9 @@ function setupEventListeners() {
       if (document.getElementById('reservation-modal').classList.contains('active')) {
         closeReservationModal();
       }
+      if (document.getElementById('call-reserve-modal')?.classList.contains('active')) {
+        closeCallReserveModal();
+      }
     }
   });
 
@@ -2300,10 +2461,15 @@ function setupEventListeners() {
     btnStartDirect.addEventListener('click', () => {
       if (startTreatmentData) {
         const { ward, docName, index, val } = startTreatmentData;
+        delete reservedDoctorCalls[docName];
+        localStorage.setItem('clinic_reserved_doctor_calls', JSON.stringify(reservedDoctorCalls));
         state[ward][docName][index] = String(val) + '_progress';
         clearOtherWardsProgress(docName, ward);
         notifyInitialTreatmentStart(docName, ward);
         saveStateForDoctor(docName);
+        if (supabaseClient) {
+          saveStateField(['reservedDoctorCalls', docName], null);
+        }
         updateUI();
       }
       closeStartTreatmentModal();
@@ -2312,6 +2478,16 @@ function setupEventListeners() {
     btnStartCall.addEventListener('click', async () => {
       if (startTreatmentData) {
         const { ward, docName, index, val } = startTreatmentData;
+        const currentStatus = getDoctorComputedStatus(docName);
+        
+        // If doctor is NOT in '콜 가능' status (Yellow: 차팅중, 자리비움, 준비중, etc.), prompt for Call Reservation
+        if (currentStatus !== '콜 가능') {
+          closeStartTreatmentModal();
+          openCallReserveModal(ward, docName, index, val, currentStatus);
+          return;
+        }
+        
+        // Doctor IS in '콜 가능' status: immediately fire call and start treatment
         state[ward][docName][index] = String(val) + '_progress';
         clearOtherWardsProgress(docName, ward);
         notifyInitialTreatmentStart(docName, ward);
@@ -2328,13 +2504,16 @@ function setupEventListeners() {
         
         // Save locally and send to database
         localStorage.setItem('clinic_call_signal', JSON.stringify(callSignal));
+        delete reservedDoctorCalls[docName];
+        localStorage.setItem('clinic_reserved_doctor_calls', JSON.stringify(reservedDoctorCalls));
         
-        // Update both state and callSignal in database atomically
+        // Update both state, callSignal, and clean up reservation in database atomically
         if (supabaseClient) {
           try {
             await Promise.all([
               saveStateField(['state', ward, docName], state[ward][docName]),
-              saveStateField(['callSignal'], callSignal)
+              saveStateField(['callSignal'], callSignal),
+              saveStateField(['reservedDoctorCalls', docName], null)
             ]);
           } catch (e) {
             console.error('[Call Signal] Failed to send to Supabase:', e);
@@ -2356,9 +2535,14 @@ function setupEventListeners() {
     btnStartDelete.addEventListener('click', () => {
       if (startTreatmentData) {
         const { ward, docName, index } = startTreatmentData;
+        delete reservedDoctorCalls[docName];
+        localStorage.setItem('clinic_reserved_doctor_calls', JSON.stringify(reservedDoctorCalls));
         state[ward][docName].splice(index, 1);
         compactRowState(ward, docName);
         saveStateForDoctor(docName);
+        if (supabaseClient) {
+          saveStateField(['reservedDoctorCalls', docName], null);
+        }
         notifyTreatmentOrderChangedForWardAndDependents(docName, ward);
         updateUI();
       }
@@ -2371,6 +2555,47 @@ function setupEventListeners() {
     startTreatmentModal.addEventListener('click', (e) => {
       if (e.target === startTreatmentModal) {
         closeStartTreatmentModal();
+      }
+    });
+  }
+
+  // Call Reservation Modal Button Listeners
+  const btnCallReserveConfirm = document.getElementById('btn-call-reserve-confirm');
+  const btnCallReserveCancel = document.getElementById('btn-call-reserve-cancel');
+  const callReserveModal = document.getElementById('call-reserve-modal');
+
+  if (btnCallReserveConfirm) {
+    btnCallReserveConfirm.addEventListener('click', async () => {
+      if (pendingCallReserveData) {
+        const { ward, docName, index, val } = pendingCallReserveData;
+        reservedDoctorCalls[docName] = {
+          ward,
+          docName,
+          index,
+          val,
+          timestamp: Date.now()
+        };
+        localStorage.setItem('clinic_reserved_doctor_calls', JSON.stringify(reservedDoctorCalls));
+        
+        if (supabaseClient) {
+          saveStateField(['reservedDoctorCalls', docName], reservedDoctorCalls[docName]);
+        }
+        updateUI();
+      }
+      closeCallReserveModal();
+    });
+  }
+
+  if (btnCallReserveCancel) {
+    btnCallReserveCancel.addEventListener('click', () => {
+      closeCallReserveModal();
+    });
+  }
+
+  if (callReserveModal) {
+    callReserveModal.addEventListener('click', (e) => {
+      if (e.target === callReserveModal) {
+        closeCallReserveModal();
       }
     });
   }
@@ -3068,6 +3293,9 @@ async function pullStateFromSupabase() {
       if (dbData.rowDirectorsFloor2) Object.assign(rowDirectorsFloor2, dbData.rowDirectorsFloor2);
       if (dbData.entryTimes) Object.assign(entryTimes, dbData.entryTimes);
       if (dbData.progressTimes) Object.assign(progressTimes, dbData.progressTimes);
+      if (dbData.reservedDoctorCalls !== undefined) {
+        reservedDoctorCalls = Object.assign({}, dbData.reservedDoctorCalls || {});
+      }
       
       // Normalize values
       const wards = ['female', 'male', 'secondFloor'];
@@ -3086,6 +3314,7 @@ async function pullStateFromSupabase() {
       });
       
       sanitizeState(false);
+      checkAndTriggerReservedCalls();
       if (isAnyModalActive() || isDraggingSlot) {
         isPendingUIUpdate = true;
       } else {
