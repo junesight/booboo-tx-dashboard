@@ -1827,7 +1827,7 @@ async function checkAndTriggerReservedCalls() {
                 await Promise.all([
                   saveStateField(['state', ward, docName], state[ward][docName]),
                   saveStateField(['callSignal'], callSignal),
-                  saveStateField(['reservedDoctorCalls', docName], null)
+                  saveStateField(['reservedDoctorCalls'], reservedDoctorCalls)
                 ]);
               } catch (e) {
                 console.error('[Call Reservation] Error saving auto-triggered call:', e);
@@ -1841,7 +1841,7 @@ async function checkAndTriggerReservedCalls() {
             delete reservedDoctorCalls[docName];
             localStorage.setItem('clinic_reserved_doctor_calls', JSON.stringify(reservedDoctorCalls));
             if (supabaseClient) {
-              saveStateField(['reservedDoctorCalls', docName], null);
+              saveStateField(['reservedDoctorCalls'], reservedDoctorCalls);
             }
           }
         }
@@ -2468,7 +2468,7 @@ function setupEventListeners() {
         notifyInitialTreatmentStart(docName, ward);
         saveStateForDoctor(docName);
         if (supabaseClient) {
-          saveStateField(['reservedDoctorCalls', docName], null);
+          saveStateField(['reservedDoctorCalls'], reservedDoctorCalls);
         }
         updateUI();
       }
@@ -2513,7 +2513,7 @@ function setupEventListeners() {
             await Promise.all([
               saveStateField(['state', ward, docName], state[ward][docName]),
               saveStateField(['callSignal'], callSignal),
-              saveStateField(['reservedDoctorCalls', docName], null)
+              saveStateField(['reservedDoctorCalls'], reservedDoctorCalls)
             ]);
           } catch (e) {
             console.error('[Call Signal] Failed to send to Supabase:', e);
@@ -2541,7 +2541,7 @@ function setupEventListeners() {
         compactRowState(ward, docName);
         saveStateForDoctor(docName);
         if (supabaseClient) {
-          saveStateField(['reservedDoctorCalls', docName], null);
+          saveStateField(['reservedDoctorCalls'], reservedDoctorCalls);
         }
         notifyTreatmentOrderChangedForWardAndDependents(docName, ward);
         updateUI();
@@ -2578,7 +2578,7 @@ function setupEventListeners() {
         localStorage.setItem('clinic_reserved_doctor_calls', JSON.stringify(reservedDoctorCalls));
         
         if (supabaseClient) {
-          saveStateField(['reservedDoctorCalls', docName], reservedDoctorCalls[docName]);
+          saveStateField(['reservedDoctorCalls'], reservedDoctorCalls);
         }
         updateUI();
       }
