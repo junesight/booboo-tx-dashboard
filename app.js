@@ -35,10 +35,10 @@ function getDoctorComputedStatus(docName) {
   const wards = ['female', 'male', 'secondFloor'];
   for (const w of wards) {
     if (state[w] && Array.isArray(state[w][docName])) {
-      const currentRaw = state[w][docName][0];
-      if (typeof currentRaw === 'string' && currentRaw.endsWith('_progress')) {
+      const prog = state[w][docName].find(v => typeof v === 'string' && v.endsWith('_progress'));
+      if (prog) {
         isInProgress = true;
-        progressVal = currentRaw;
+        progressVal = prog;
         break;
       }
     }
@@ -49,7 +49,7 @@ function getDoctorComputedStatus(docName) {
     if (cleanVal.endsWith('_reserved')) cleanVal = cleanVal.slice(0, -9);
     if (cleanVal.startsWith('사혈_')) cleanVal = '사혈';
     const consultationTreatments = ['상담', '한약상담', '린다이어트'];
-    if (cleanVal === '식사') return '자리비움';
+    if (cleanVal === '식사' || cleanVal === '🍱') return '자리비움';
     if (consultationTreatments.includes(cleanVal)) return '상담중';
     return '치료중';
   }
@@ -858,10 +858,10 @@ function updateUI() {
     const wards = ['female', 'male', 'secondFloor'];
     for (const w of wards) {
       if (state[w] && Array.isArray(state[w][docName])) {
-        const currentRaw = state[w][docName][0];
-        if (typeof currentRaw === 'string' && currentRaw.endsWith('_progress')) {
+        const prog = state[w][docName].find(v => typeof v === 'string' && v.endsWith('_progress'));
+        if (prog) {
           isInProgress = true;
-          progressVal = currentRaw;
+          progressVal = prog;
           break;
         }
       }
@@ -877,7 +877,7 @@ function updateUI() {
         cleanVal = '사혈';
       }
       const consultationTreatments = ['상담', '한약상담', '린다이어트'];
-      if (cleanVal === '식사') {
+      if (cleanVal === '식사' || cleanVal === '🍱') {
         computedStatus = '자리비움';
       } else if (consultationTreatments.includes(cleanVal)) {
         computedStatus = '상담중';
@@ -1255,6 +1255,9 @@ function updateSlotDisplay(slotEl, val, index) {
     if (isCallReserved) {
       magnetClass += ' call-reserved';
       const remainingSecs = Math.max(0, Math.ceil((120000 - (Date.now() - reservation.timestamp)) / 1000));
+      if (remainingSecs <= 10 && remainingSecs > 0) {
+        magnetClass += ' call-reserved-urgency';
+      }
       const mins = Math.floor(remainingSecs / 60);
       const secs = remainingSecs % 60;
       reservedBadgeHtml = `<span class="slot-call-reserved-badge" data-doc="${docName}">🔔 콜예약 ${mins}:${String(secs).padStart(2, '0')}</span>`;
@@ -2543,6 +2546,18 @@ function setupEventListeners() {
         state[ward][docName][index] = String(val) + '_progress';
         clearOtherWardsProgress(docName, ward);
         notifyInitialTreatmentStart(docName, ward);
+
+        let cleanVal = String(val);
+        if (cleanVal.endsWith('_reserved')) cleanVal = cleanVal.slice(0, -9);
+        if (cleanVal.startsWith('사혈_')) cleanVal = cleanVal.slice(3);
+        if (cleanVal === '식사' || cleanVal === '🍱') {
+          directorStatuses[docName] = '자리비움';
+          localStorage.setItem('clinic_director_statuses', JSON.stringify(directorStatuses));
+          if (supabaseClient) {
+            saveStateField(['directorStatuses', docName], '자리비움');
+          }
+        }
+
         saveStateForDoctor(docName);
         if (supabaseClient) {
           saveStateField(['reservedDoctorCalls'], reservedDoctorCalls);
@@ -2560,7 +2575,7 @@ function setupEventListeners() {
         let cleanVal = String(val);
         if (cleanVal.endsWith('_reserved')) cleanVal = cleanVal.slice(0, -9);
         if (cleanVal.startsWith('사혈_')) cleanVal = cleanVal.slice(3);
-        const isMeal = (cleanVal === '식사');
+        const isMeal = (cleanVal === '식사' || cleanVal === '🍱');
 
         // If doctor is NOT in '콜 가능' status and item is NOT '식사', prompt for Call Reservation / Notice
         if (!isMeal && currentStatus !== '콜 가능') {
@@ -2569,6 +2584,11 @@ function setupEventListeners() {
           return;
         }
         
+        if (isMeal) {
+          directorStatuses[docName] = '자리비움';
+          localStorage.setItem('clinic_director_statuses', JSON.stringify(directorStatuses));
+        }
+
         // Doctor IS in '콜 가능' status: immediately fire call and start treatment
         state[ward][docName][index] = String(val) + '_progress';
         clearOtherWardsProgress(docName, ward);
@@ -2592,11 +2612,15 @@ function setupEventListeners() {
         // Update both state, callSignal, and clean up reservation in database atomically
         if (supabaseClient) {
           try {
-            await Promise.all([
+            const promises = [
               saveStateField(['state', ward, docName], state[ward][docName]),
               saveStateField(['callSignal'], callSignal),
               saveStateField(['reservedDoctorCalls'], reservedDoctorCalls)
-            ]);
+            ];
+            if (isMeal) {
+              promises.push(saveStateField(['directorStatuses', docName], '자리비움'));
+            }
+            await Promise.all(promises);
           } catch (e) {
             console.error('[Call Signal] Failed to send to Supabase:', e);
             saveStateForDoctor(docName);
@@ -3200,6 +3224,15 @@ function updateElapsedTimesDisplay() {
       const mins = Math.floor(remainingSecs / 60);
       const secs = remainingSecs % 60;
       badge.textContent = `🔔 콜예약 ${mins}:${String(secs).padStart(2, '0')}`;
+      
+      const magnet = badge.closest('.slot-magnet');
+      if (magnet) {
+        if (remainingSecs <= 10 && remainingSecs > 0) {
+          magnet.classList.add('call-reserved-urgency');
+        } else {
+          magnet.classList.remove('call-reserved-urgency');
+        }
+      }
     }
   });
 }
