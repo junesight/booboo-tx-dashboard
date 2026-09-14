@@ -23,6 +23,33 @@ let directorAutoStatus = {
 const doctorCallAvailableTimestamps = {};
 const prevDoctorComputedStatuses = {};
 
+// UI Interactivity & Sync Protection Flags
+let isPendingUIUpdate = false;
+let isDraggingSlot = false;
+const pendingRpcQueue = [];
+let isFlushingRpcQueue = false;
+
+function isAnyModalActive() {
+  const modalOverlays = [
+    document.getElementById('bed-modal'),
+    document.getElementById('director-modal'),
+    document.getElementById('leave-time-modal'),
+    document.getElementById('cancel-progress-modal'),
+    document.getElementById('start-treatment-modal'),
+    document.getElementById('custom-confirm-modal'),
+    document.getElementById('reservation-modal')
+  ];
+  return modalOverlays.some(m => m && m.classList.contains('active'));
+}
+
+function flushPendingUIUpdateIfNeeded() {
+  if (isPendingUIUpdate && !isAnyModalActive() && !isDraggingSlot) {
+    isPendingUIUpdate = false;
+    updateUI();
+  }
+}
+
+
 // Connection Status Indicator Updater
 function updateConnectionStatus(status) {
   const indicator = document.getElementById('connection-status');
@@ -214,7 +241,7 @@ function loadStateFromLocalStorage() {
           leaveTimes[dName] = oldLeave[r] || null;
           offDutyDirectors[dName] = oldOff[r] || false;
         }
-        saveState();
+        localStorage.setItem('clinic_treatment_state', JSON.stringify(state));
         localStorage.setItem('clinic_leave_times', JSON.stringify(leaveTimes));
         localStorage.setItem('clinic_off_duty_directors', JSON.stringify(offDutyDirectors));
       } else {
@@ -450,7 +477,12 @@ function setupSupabaseRealtime() {
           if (newData.progressTimes) Object.assign(progressTimes, newData.progressTimes);
           
           sanitizeState(false);
-          updateUI();
+          
+          if (isAnyModalActive() || isDraggingSlot) {
+            isPendingUIUpdate = true;
+          } else {
+            updateUI();
+          }
         }
       }
     );
@@ -468,6 +500,7 @@ function setupSupabaseRealtime() {
   // Handle online/offline events for dynamic reconnect status updates
   window.addEventListener('online', () => {
     updateConnectionStatus('connecting');
+    flushPendingRpcQueue();
     pullStateFromSupabase();
   });
   window.addEventListener('offline', () => {
@@ -549,49 +582,54 @@ function maintainProgressTimes() {
   });
 }
 
-// Save current state to localStorage and Supabase
-async function saveState() {
-  maintainEntryTimes();
-  maintainProgressTimes();
-  localStorage.setItem('clinic_treatment_state', JSON.stringify(state));
-  localStorage.setItem('clinic_leave_times', JSON.stringify(leaveTimes));
-  localStorage.setItem('clinic_off_duty_directors', JSON.stringify(offDutyDirectors));
-  localStorage.setItem('clinic_row_directors_floor1', JSON.stringify(rowDirectorsFloor1));
-  localStorage.setItem('clinic_row_directors_floor2', JSON.stringify(rowDirectorsFloor2));
-  localStorage.setItem('clinic_entry_times', JSON.stringify(entryTimes));
-  localStorage.setItem('clinic_progress_times', JSON.stringify(progressTimes));
-
-  if (supabaseClient) {
-    if (!isLoadedFromSupabase) {
-      console.warn('[Supabase] Save blocked: Initial fetch from Supabase failed on this device, so we block writes to prevent wiping out server state.');
-      return;
-    }
+// Safe atomic RPC call with auto-retry and offline pending queue
+async function safeRpcCall(path, value, retryCount = 3) {
+  if (!supabaseClient) return true;
+  for (let i = 0; i < retryCount; i++) {
     try {
-      const { error } = await supabaseClient
-        .from('clinic_state')
-        .upsert({
-          id: 'global',
-          data: {
-            state,
-            leaveTimes,
-            offDutyDirectors,
-            rowDirectorsFloor1,
-            rowDirectorsFloor2,
-            entryTimes,
-            progressTimes
-          },
-          updated_at: new Date().toISOString()
-        });
-      if (error) {
-        console.error('Error saving state to Supabase:', error);
-      }
+      const { error } = await supabaseClient.rpc('update_clinic_state_field', {
+        p_path: path,
+        p_value: value
+      });
+      if (!error) return true;
+      console.warn(`[Supabase RPC] Attempt ${i + 1} failed for ${path.join('.')}:`, error);
     } catch (e) {
-      console.error('Exception saving state to Supabase:', e);
+      console.warn(`[Supabase RPC] Exception attempt ${i + 1} for ${path.join('.')}:`, e);
     }
+    await new Promise(r => setTimeout(r, 200 * (i + 1)));
   }
+  // Enqueue failed update to retry when connection is stable
+  pendingRpcQueue.push({ path, value, timestamp: Date.now() });
+  console.warn(`[Supabase RPC] Enqueued failed RPC for ${path.join('.')}. Queue size: ${pendingRpcQueue.length}`);
+  return false;
 }
 
-// Save a single JSONB field path to Supabase atomically via RPC
+// Flush pending RPC queue
+async function flushPendingRpcQueue() {
+  if (isFlushingRpcQueue || pendingRpcQueue.length === 0 || !supabaseClient) return;
+  isFlushingRpcQueue = true;
+  console.log(`[Supabase RPC] Flushing ${pendingRpcQueue.length} pending updates...`);
+  while (pendingRpcQueue.length > 0) {
+    const item = pendingRpcQueue[0];
+    try {
+      const { error } = await supabaseClient.rpc('update_clinic_state_field', {
+        p_path: item.path,
+        p_value: item.value
+      });
+      if (error) {
+        console.warn(`[Supabase RPC] Pending item retry failed for ${item.path.join('.')}:`, error);
+        break;
+      }
+      pendingRpcQueue.shift();
+    } catch (e) {
+      console.warn(`[Supabase RPC] Exception flushing item for ${item.path.join('.')}:`, e);
+      break;
+    }
+  }
+  isFlushingRpcQueue = false;
+}
+
+// Save a single JSONB field path to Supabase atomically via RPC (never overwrites other data)
 async function saveStateField(path, value) {
   maintainEntryTimes();
   maintainProgressTimes();
@@ -607,29 +645,18 @@ async function saveStateField(path, value) {
 
   if (supabaseClient) {
     if (!isLoadedFromSupabase) {
-      console.warn('[Supabase] Save field blocked: Initial fetch from Supabase failed on this device, so we block writes.');
+      console.warn('[Supabase] Save field blocked: Initial fetch from Supabase failed on this device.');
       return;
     }
-    try {
-      const results = await Promise.all([
-        supabaseClient.rpc('update_clinic_state_field', { p_path: path, p_value: value }),
-        supabaseClient.rpc('update_clinic_state_field', { p_path: ['entryTimes'], p_value: entryTimes }),
-        supabaseClient.rpc('update_clinic_state_field', { p_path: ['progressTimes'], p_value: progressTimes })
-      ]);
-      const hasError = results.some(res => res.error);
-      if (hasError) {
-        console.error(`Error saving field ${path.join('.')} to Supabase:`, results);
-        console.warn('Falling back to full saveState() due to RPC failure.');
-        saveState();
-      }
-    } catch (e) {
-      console.error(`Exception saving field ${path.join('.')} to Supabase:`, e);
-      saveState();
-    }
+    await Promise.all([
+      safeRpcCall(path, value),
+      safeRpcCall(['entryTimes'], entryTimes),
+      safeRpcCall(['progressTimes'], progressTimes)
+    ]);
   }
 }
 
-// Save all ward states for a specific doctor atomically
+// Save all ward states for a specific doctor atomically (never touches other doctors)
 async function saveStateForDoctor(docName) {
   maintainEntryTimes();
   maintainProgressTimes();
@@ -638,26 +665,16 @@ async function saveStateForDoctor(docName) {
   localStorage.setItem('clinic_progress_times', JSON.stringify(progressTimes));
   if (supabaseClient) {
     if (!isLoadedFromSupabase) {
-      console.warn(`[Supabase] Save for doctor ${docName} blocked: Initial fetch from Supabase failed on this device, so we block writes.`);
+      console.warn(`[Supabase] Save for doctor ${docName} blocked: Initial fetch from Supabase failed.`);
       return;
     }
-    try {
-      const results = await Promise.all([
-        supabaseClient.rpc('update_clinic_state_field', { p_path: ['state', 'female', docName], p_value: state.female[docName] || [] }),
-        supabaseClient.rpc('update_clinic_state_field', { p_path: ['state', 'male', docName], p_value: state.male[docName] || [] }),
-        supabaseClient.rpc('update_clinic_state_field', { p_path: ['state', 'secondFloor', docName], p_value: state.secondFloor[docName] || [] }),
-        supabaseClient.rpc('update_clinic_state_field', { p_path: ['entryTimes'], p_value: entryTimes }),
-        supabaseClient.rpc('update_clinic_state_field', { p_path: ['progressTimes'], p_value: progressTimes })
-      ]);
-      const hasError = results.some(res => res.error);
-      if (hasError) {
-        console.error(`Error saving state for doctor ${docName} to Supabase. falling back to full saveState().`, results);
-        saveState();
-      }
-    } catch (e) {
-      console.error(`Exception saving state for doctor ${docName}:`, e);
-      saveState();
-    }
+    await Promise.all([
+      safeRpcCall(['state', 'female', docName], state.female[docName] || []),
+      safeRpcCall(['state', 'male', docName], state.male[docName] || []),
+      safeRpcCall(['state', 'secondFloor', docName], state.secondFloor[docName] || []),
+      safeRpcCall(['entryTimes'], entryTimes),
+      safeRpcCall(['progressTimes'], progressTimes)
+    ]);
   }
 }
 
@@ -672,34 +689,40 @@ function compactRowState(ward, docName) {
   }
 }
 
-// Sanitize state by removing _progress suffix from slots at index >= 1
+// Sanitize state by removing phantom _progress suffix from slots at index >= 1 (granular saving only)
 function sanitizeState(shouldSave = true) {
   maintainEntryTimes();
   maintainProgressTimes();
   const wards = ['female', 'male', 'secondFloor'];
-  let modified = false;
+  const modifiedEntries = [];
   
   wards.forEach(w => {
     if (state[w]) {
       Object.keys(state[w]).forEach(d => {
         if (Array.isArray(state[w][d])) {
+          let rowModified = false;
           state[w][d] = state[w][d].map((val, idx) => {
             if (idx >= 1 && typeof val === 'string' && val.endsWith('_progress')) {
-              modified = true;
+              rowModified = true;
               const clean = val.substring(0, val.length - 9);
               const parsed = parseInt(clean, 10);
               return (!isNaN(parsed) && String(parsed) === clean) ? parsed : clean;
             }
             return val;
           });
+          if (rowModified) {
+            modifiedEntries.push({ ward: w, doc: d });
+          }
         }
       });
     }
   });
   
-  if (modified && shouldSave) {
-    console.log('[Sanitize] Cleaned up phantom _progress suffixes from index >= 1 slots.');
-    saveStateField(['state'], state);
+  if (modifiedEntries.length > 0 && shouldSave) {
+    console.log(`[Sanitize] Cleaned phantom _progress from ${modifiedEntries.length} queues. Saving atomically...`);
+    modifiedEntries.forEach(item => {
+      saveStateField(['state', item.ward, item.doc], state[item.ward][item.doc]);
+    });
   }
 }
 
@@ -1580,6 +1603,7 @@ function triggerLongPress(slot) {
 function closeCancelProgressModal() {
   cancelProgressModalOverlay.classList.remove('active');
   activeCancelSlot = null;
+  flushPendingUIUpdateIfNeeded();
 }
 
 // Confirm and process the Cancel Progress action
@@ -1617,11 +1641,13 @@ function showConfirmModal(title, text, confirmCallback) {
   
   newBtnYes.addEventListener('click', () => {
     modal.classList.remove('active');
+    flushPendingUIUpdateIfNeeded();
     if (confirmCallback) confirmCallback();
   });
   
   const closeConfirmModal = () => {
     modal.classList.remove('active');
+    flushPendingUIUpdateIfNeeded();
   };
   
   newBtnNo.addEventListener('click', closeConfirmModal);
@@ -1663,6 +1689,7 @@ function closeStartTreatmentModal() {
     modal.classList.remove('active');
   }
   startTreatmentData = null;
+  flushPendingUIUpdateIfNeeded();
 }
 
 // Setup Event Listeners
@@ -1857,7 +1884,7 @@ function setupEventListeners() {
   boardWrapper.addEventListener('dragstart', (e) => {
     clearTimeout(longPressTimer);
     isLongPress = false;
-    
+    isDraggingSlot = true;
     
     const magnet = e.target.closest('.slot-magnet');
     const cell = e.target.closest('.director-left-cell');
@@ -1878,6 +1905,7 @@ function setupEventListeners() {
       const activeTab = document.body.getAttribute('data-active-tab') || 'all';
       if (activeTab === 'all') {
         e.preventDefault();
+        isDraggingSlot = false;
         return;
       }
       dragType = 'row';
@@ -1891,6 +1919,7 @@ function setupEventListeners() {
 
   // Drag end
   boardWrapper.addEventListener('dragend', (e) => {
+    isDraggingSlot = false;
     if (dragType === 'magnet') {
       const magnet = e.target.closest('.slot-magnet');
       if (magnet) {
@@ -1905,6 +1934,7 @@ function setupEventListeners() {
     dragSourceRow = null;
     dragSourceFloor = null;
     dragSource = { ward: null, docName: null, index: null };
+    flushPendingUIUpdateIfNeeded();
   });
 
   // Drag over (allow drop)
@@ -2619,6 +2649,7 @@ function openModal(ward, docName, index) {
 function closeModal() {
   modalOverlay.classList.remove('active');
   isBloodlettingMode = false;
+  flushPendingUIUpdateIfNeeded();
 }
 
 // Helper to decide if we should ask for reservation based on time
@@ -2707,6 +2738,7 @@ function closeReservationModal() {
   const modal = document.getElementById('reservation-modal');
   if (modal) modal.classList.remove('active');
   pendingReservationData = null;
+  flushPendingUIUpdateIfNeeded();
 }
 
 function setDoctorStatusOnTreatmentEnd(docName, clearedVal) {
@@ -2963,6 +2995,7 @@ function closeDirectorModal() {
   activeDirectorFloor = null;
   activeDirectorRow = null;
   activeDirectorName = null;
+  flushPendingUIUpdateIfNeeded();
 }
 
 // Open Leave Time Selection Modal
@@ -3007,6 +3040,7 @@ function selectLeaveTime(val) {
 function closeLeaveTimeModal() {
   leaveTimeModalOverlay.classList.remove('active');
   activeLeaveTimeDoc = null;
+  flushPendingUIUpdateIfNeeded();
 }
 
 // Fetch latest state from Supabase and redraw UI (used for manual/automatic reconnect syncing)
@@ -3052,8 +3086,12 @@ async function pullStateFromSupabase() {
       });
       
       sanitizeState(false);
-      updateUI();
-      console.log('[Sync] State pull and UI update complete.');
+      if (isAnyModalActive() || isDraggingSlot) {
+        isPendingUIUpdate = true;
+      } else {
+        updateUI();
+      }
+      console.log('[Sync] State pull complete.');
     } else {
       console.error('[Sync] Error pulling state from Supabase:', error);
       isLoadedFromSupabase = false;
@@ -3186,8 +3224,14 @@ async function syncScheduleFromSupabase({ silent = false } = {}) {
       directorStatuses[doc] = '콜 가능';
     });
     
-    // Save to Supabase and localStorage
-    saveState();
+    // Save only schedule-related fields to Supabase atomically without touching patient beds
+    await Promise.all([
+      saveStateField(['rowDirectorsFloor1'], rowDirectorsFloor1),
+      saveStateField(['rowDirectorsFloor2'], rowDirectorsFloor2),
+      saveStateField(['leaveTimes'], leaveTimes),
+      saveStateField(['offDutyDirectors'], offDutyDirectors),
+      saveStateField(['directorStatuses'], directorStatuses)
+    ]);
     
     // Record last sync date
     localStorage.setItem('clinic_last_sync_date', todayStr);
