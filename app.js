@@ -1787,65 +1787,97 @@ async function checkAndTriggerReservedCalls() {
   const allDocs = ['최보빈', '김준현', '김영윤', '박지현', '안태윤', '황두호'];
   for (const docName of allDocs) {
     const reservation = reservedDoctorCalls[docName];
-    if (reservation) {
-      const computedStatus = getDoctorComputedStatus(docName);
-      if (computedStatus === '콜 가능') {
-        const { ward, val } = reservation;
-        const row = state[ward]?.[docName];
-        if (Array.isArray(row)) {
-          const currentIdx = row.findIndex(v => {
-            if (v === null || v === undefined) return false;
-            let clean = v;
-            if (typeof clean === 'string' && clean.endsWith('_progress')) clean = clean.substring(0, clean.length - 9);
-            return String(clean) === String(val);
-          });
-          
-          if (currentIdx !== -1) {
-            isTriggeringReservedCall = true;
-            console.log(`[Call Reservation] Doctor ${docName} is now '콜 가능'. Auto-firing reserved call for ${ward} bed ${val}...`);
-            
-            // Transition slot to progress
-            state[ward][docName][currentIdx] = String(val) + '_progress';
-            clearOtherWardsProgress(docName, ward);
-            notifyInitialTreatmentStart(docName, ward);
-            
-            // Send doctor call notification
-            sendTreatmentNotification(docName, ward, 'doctor-call');
-            
-            const callSignal = {
-              docName: docName,
-              bed: val,
-              timestamp: Date.now()
-            };
-            
-            localStorage.setItem('clinic_call_signal', JSON.stringify(callSignal));
-            delete reservedDoctorCalls[docName];
-            localStorage.setItem('clinic_reserved_doctor_calls', JSON.stringify(reservedDoctorCalls));
-            
-            if (supabaseClient) {
-              try {
-                await Promise.all([
-                  saveStateField(['state', ward, docName], state[ward][docName]),
-                  saveStateField(['callSignal'], callSignal),
-                  saveStateField(['reservedDoctorCalls'], reservedDoctorCalls)
-                ]);
-              } catch (e) {
-                console.error('[Call Reservation] Error saving auto-triggered call:', e);
-              }
-            }
-            
-            updateUI();
-            isTriggeringReservedCall = false;
-          } else {
-            // Slot was removed, clean up stale reservation
-            delete reservedDoctorCalls[docName];
-            localStorage.setItem('clinic_reserved_doctor_calls', JSON.stringify(reservedDoctorCalls));
-            if (supabaseClient) {
-              saveStateField(['reservedDoctorCalls'], reservedDoctorCalls);
-            }
-          }
+    if (!reservation) continue;
+
+    const { ward, val } = reservation;
+    const row = state[ward]?.[docName];
+    if (!Array.isArray(row)) {
+      delete reservedDoctorCalls[docName];
+      localStorage.setItem('clinic_reserved_doctor_calls', JSON.stringify(reservedDoctorCalls));
+      if (supabaseClient) saveStateField(['reservedDoctorCalls'], reservedDoctorCalls);
+      continue;
+    }
+
+    // Check if the reserved bed is already in-progress
+    const isAlreadyProgress = row.some(v => {
+      if (typeof v !== 'string' || !v.endsWith('_progress')) return false;
+      let clean = v.slice(0, -9);
+      if (clean.endsWith('_reserved')) clean = clean.slice(0, -9);
+      if (clean.startsWith('사혈_')) clean = clean.slice(3);
+      return String(clean) === String(val);
+    });
+
+    if (isAlreadyProgress) {
+      console.log(`[Call Reservation] Web Tracker: Slot ${val} for ${docName} is already in progress. Clearing reservation.`);
+      delete reservedDoctorCalls[docName];
+      localStorage.setItem('clinic_reserved_doctor_calls', JSON.stringify(reservedDoctorCalls));
+      if (supabaseClient) {
+        saveStateField(['reservedDoctorCalls'], reservedDoctorCalls);
+      }
+      updateUI();
+      continue;
+    }
+
+    // Find if the waiting slot exists
+    const currentIdx = row.findIndex(v => {
+      if (v === null || v === undefined) return false;
+      if (typeof v === 'string' && v.endsWith('_progress')) return false;
+      let clean = v;
+      if (typeof clean === 'string' && clean.endsWith('_reserved')) clean = clean.slice(0, -9);
+      if (typeof clean === 'string' && clean.startsWith('사혈_')) clean = clean.slice(3);
+      return String(clean) === String(val);
+    });
+
+    if (currentIdx === -1) {
+      console.log(`[Call Reservation] Web Tracker: Slot ${val} for ${docName} not found in waiting queue. Removing stale reservation.`);
+      delete reservedDoctorCalls[docName];
+      localStorage.setItem('clinic_reserved_doctor_calls', JSON.stringify(reservedDoctorCalls));
+      if (supabaseClient) {
+        saveStateField(['reservedDoctorCalls'], reservedDoctorCalls);
+      }
+      updateUI();
+      continue;
+    }
+
+    const computedStatus = getDoctorComputedStatus(docName);
+    if (computedStatus === '콜 가능') {
+      isTriggeringReservedCall = true;
+      console.log(`[Call Reservation] Web Tracker: Doctor ${docName} is '콜 가능'. Auto-firing reserved call for ${ward} bed ${val}...`);
+      
+      // Immediately remove reservation from memory
+      delete reservedDoctorCalls[docName];
+      localStorage.setItem('clinic_reserved_doctor_calls', JSON.stringify(reservedDoctorCalls));
+
+      // Transition slot to progress
+      state[ward][docName][currentIdx] = String(val) + '_progress';
+      clearOtherWardsProgress(docName, ward);
+      notifyInitialTreatmentStart(docName, ward);
+      
+      // Send doctor call notification
+      sendTreatmentNotification(docName, ward, 'doctor-call');
+      
+      const callSignal = {
+        docName: docName,
+        bed: val,
+        timestamp: Date.now()
+      };
+      
+      localStorage.setItem('clinic_call_signal', JSON.stringify(callSignal));
+      
+      if (supabaseClient) {
+        try {
+          await Promise.all([
+            saveStateField(['state', ward, docName], state[ward][docName]),
+            saveStateField(['callSignal'], callSignal),
+            saveStateField(['reservedDoctorCalls'], reservedDoctorCalls)
+          ]);
+        } catch (e) {
+          console.error('[Call Reservation] Error saving auto-triggered call:', e);
         }
       }
+      
+      updateUI();
+      isTriggeringReservedCall = false;
     }
   }
 }
