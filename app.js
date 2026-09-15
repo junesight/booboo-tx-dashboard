@@ -399,16 +399,31 @@ async function initApp() {
         isLoadedFromSupabase = true;
         hideOfflineBanner();
         const dbData = dbRow.data;
+        
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const date = String(now.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${date}`;
+        const isDbScheduleStale = !dbData.scheduleDate || dbData.scheduleDate !== todayStr;
+
         if (dbData.state) Object.assign(state, dbData.state);
-        if (dbData.leaveTimes) Object.assign(leaveTimes, dbData.leaveTimes);
-        if (dbData.offDutyDirectors) Object.assign(offDutyDirectors, dbData.offDutyDirectors);
-        if (dbData.directorStatuses) Object.assign(directorStatuses, dbData.directorStatuses);
-        if (dbData.directorAutoStatus) Object.assign(directorAutoStatus, dbData.directorAutoStatus);
-        if (dbData.rowDirectorsFloor1) Object.assign(rowDirectorsFloor1, dbData.rowDirectorsFloor1);
-        if (dbData.rowDirectorsFloor2) Object.assign(rowDirectorsFloor2, dbData.rowDirectorsFloor2);
+        if (!isDbScheduleStale) {
+          if (dbData.leaveTimes) Object.assign(leaveTimes, dbData.leaveTimes);
+          if (dbData.offDutyDirectors) Object.assign(offDutyDirectors, dbData.offDutyDirectors);
+          if (dbData.directorStatuses) Object.assign(directorStatuses, dbData.directorStatuses);
+          if (dbData.directorAutoStatus) Object.assign(directorAutoStatus, dbData.directorAutoStatus);
+          if (dbData.rowDirectorsFloor1) Object.assign(rowDirectorsFloor1, dbData.rowDirectorsFloor1);
+          if (dbData.rowDirectorsFloor2) Object.assign(rowDirectorsFloor2, dbData.rowDirectorsFloor2);
+        }
         if (dbData.entryTimes) Object.assign(entryTimes, dbData.entryTimes);
         if (dbData.progressTimes) Object.assign(progressTimes, dbData.progressTimes);
         if (dbData.reservedDoctorCalls) Object.assign(reservedDoctorCalls, dbData.reservedDoctorCalls);
+
+        if (isDbScheduleStale) {
+          console.warn(`[Schedule Sync] DB schedule date (${dbData.scheduleDate}) is stale compared to today (${todayStr}). Syncing today's schedule immediately...`);
+          setTimeout(() => syncScheduleFromSupabase({ silent: true }), 0);
+        }
       } else {
         isLoadedFromSupabase = false;
         showOfflineBanner();
@@ -2525,6 +2540,13 @@ function setupEventListeners() {
       console.log('[Visibility Change] Tab became active/focused. Syncing state and reconnecting...');
       pullStateFromSupabase();
       setupSupabaseRealtime();
+
+      const dObj = new Date();
+      const todayStr = `${dObj.getFullYear()}-${String(dObj.getMonth() + 1).padStart(2, '0')}-${String(dObj.getDate()).padStart(2, '0')}`;
+      if (localStorage.getItem('clinic_last_sync_date') !== todayStr) {
+        console.log('[Visibility Change] New day detected on focus. Syncing schedule...');
+        syncScheduleFromSupabase({ silent: true });
+      }
     }
   };
 
@@ -3277,6 +3299,15 @@ function startClock() {
     
     liveClockEl.textContent = `${year}년 ${month}월 ${date}일 (${day}) ${ampm} ${formattedHours}:${minutes}:${seconds}`;
     
+    // Check if day changed (midnight rollover) while page was left open
+    const currentDateStr = `${year}-${month}-${date}`;
+    const lastSyncDate = localStorage.getItem('clinic_last_sync_date');
+    if (lastSyncDate && lastSyncDate !== currentDateStr) {
+      console.log(`[Date Rollover] Date changed from ${lastSyncDate} to ${currentDateStr}. Auto-syncing daily schedule...`);
+      localStorage.setItem('clinic_last_sync_date', currentDateStr);
+      syncScheduleFromSupabase({ silent: true });
+    }
+
     // Dynamically update elapsed minutes badges
     updateElapsedTimesDisplay();
 
@@ -3589,7 +3620,8 @@ async function syncScheduleFromSupabase({ silent = false } = {}) {
       saveStateField(['rowDirectorsFloor2'], rowDirectorsFloor2),
       saveStateField(['leaveTimes'], leaveTimes),
       saveStateField(['offDutyDirectors'], offDutyDirectors),
-      saveStateField(['directorStatuses'], directorStatuses)
+      saveStateField(['directorStatuses'], directorStatuses),
+      saveStateField(['scheduleDate'], todayStr)
     ]);
     
     // Record last sync date
