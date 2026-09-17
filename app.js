@@ -3389,7 +3389,7 @@ function openLeaveTimeModal(docName) {
   activeLeaveTimeDoc = docName;
   
   modalLeaveTimeGrid.innerHTML = '';
-  const options = ['12시', '2시', '4시', '5시', '6시', '7시', '야간', '초기화'];
+  const options = ['4시', '5시', '6시', '7시', '야간', '초기화'];
   
   options.forEach(opt => {
     const btn = document.createElement('button');
