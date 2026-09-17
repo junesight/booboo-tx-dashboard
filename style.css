@@ -2006,10 +2006,10 @@ body[data-active-tab="floor2"] #panel-floor2 {
   gap: 0.8rem;
 }
 
-/* Leave Time Modal Grid (3 Columns for balanced 2x3 layout) */
+/* Leave Time Modal Grid (4 Columns for balanced 2x4 layout) */
 #modal-leave-time-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 0.8rem;
 }
 

@@ -3389,7 +3389,7 @@ function openLeaveTimeModal(docName) {
   activeLeaveTimeDoc = docName;
   
   modalLeaveTimeGrid.innerHTML = '';
-  const options = ['4시', '5시', '6시', '7시', '야간', '초기화'];
+  const options = ['12시', '2시', '4시', '5시', '6시', '7시', '야간', '초기화'];
   
   options.forEach(opt => {
     const btn = document.createElement('button');
@@ -3568,11 +3568,17 @@ async function syncScheduleFromSupabase({ silent = false } = {}) {
         
         let leaveTime = null;
         if (!isOff) {
-          if (status === '4' || status === '4시') leaveTime = '4시';
+          if (status === '12' || status === '12시' || status === '12:00' || status === '오전') leaveTime = '12시';
+          else if (status === '1' || status === '1시') leaveTime = '1시';
+          else if (status === '2' || status === '2시') leaveTime = '2시';
+          else if (status === '3' || status === '3시') leaveTime = '3시';
+          else if (status === '4' || status === '4시') leaveTime = '4시';
           else if (status === '5' || status === '5시') leaveTime = '5시';
           else if (status === '6' || status === '6시') leaveTime = '6시';
           else if (status === '7' || status === '7시') leaveTime = '7시';
           else if (status === '8' || status === '8시' || status === '야간') leaveTime = '야간';
+          else if (/^\d+$/.test(status)) leaveTime = `${status}시`;
+          else if (status.endsWith('시')) leaveTime = status;
         }
         
         const info = {
