@@ -2029,7 +2029,7 @@ function setupEventListeners() {
               compactRowState(ward, docName);
               console.log(`[Pause Logic] Click handler: Cleared current item and encountered pause button at index 1. Removing both, setting status to 콜 가능, and halting progress.`);
             } else {
-              setDoctorStatusOnTreatmentEnd(docName, clearedVal);
+              setDoctorStatusOnTreatmentEnd(docName, clearedVal, ward);
               if (isMealTreatment(clearedVal)) {
                 state[ward][docName].splice(index, 1);
                 compactRowState(ward, docName);
@@ -3094,7 +3094,7 @@ function closeReservationModal() {
   flushPendingUIUpdateIfNeeded();
 }
 
-function setDoctorStatusOnTreatmentEnd(docName, clearedVal) {
+function setDoctorStatusOnTreatmentEnd(docName, clearedVal, ward = null) {
   if (!docName || !clearedVal) return;
   
   let cleanVal = clearedVal;
@@ -3110,10 +3110,27 @@ function setDoctorStatusOnTreatmentEnd(docName, clearedVal) {
   
   const consultationTreatments = ['상담', '한약상담', '린다이어트'];
   
+  // Calculate progress duration (in ms) to detect accidental calls/clears under 30 seconds
+  let durationMs = Infinity;
+  if (ward && progressTimes[`${ward}|${docName}|${cleanVal}`]) {
+    durationMs = Date.now() - progressTimes[`${ward}|${docName}|${cleanVal}`];
+  } else {
+    const wards = ['female', 'male', 'secondFloor'];
+    for (const w of wards) {
+      if (progressTimes[`${w}|${docName}|${cleanVal}`]) {
+        durationMs = Date.now() - progressTimes[`${w}|${docName}|${cleanVal}`];
+        break;
+      }
+    }
+  }
+
+  const isAccidentalClear = durationMs < 30000;
+  
   if (cleanVal === '식사') {
     directorStatuses[docName] = '자리비움';
-  } else if (directorAutoStatus[docName] === true) {
+  } else if (isAccidentalClear || directorAutoStatus[docName] === true) {
     directorStatuses[docName] = '콜 가능';
+    console.log(`[Status Transition] ${docName}: Treatment '${cleanVal}' ended within ${Math.round(durationMs / 1000)}s (< 30s). Auto-reverting to '콜 가능'.`);
   } else {
     if (consultationTreatments.includes(cleanVal)) {
       directorStatuses[docName] = '차팅중';
@@ -3141,7 +3158,7 @@ function clearActiveSlot() {
       compactRowState(ward, docName);
       
       if (wasProgress) {
-        setDoctorStatusOnTreatmentEnd(docName, clearedVal);
+        setDoctorStatusOnTreatmentEnd(docName, clearedVal, ward);
         const progressedWard = isMealTreatment(clearedVal)
           ? null
           : handleQueueShift(ward, docName, index, clearedVal);
