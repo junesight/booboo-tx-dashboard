@@ -63,6 +63,12 @@ let isDraggingSlot = false;
 const pendingRpcQueue = [];
 let isFlushingRpcQueue = false;
 
+// Background Polling & Realtime Heartbeat state
+let backgroundSyncTimer = null;
+let lastRealtimeMessageTime = Date.now();
+let lastUserTouchTime = 0;
+let dragSafetyTimeout = null;
+
 function isAnyModalActive() {
   const modalOverlays = [
     document.getElementById('bed-modal'),
@@ -82,6 +88,48 @@ function flushPendingUIUpdateIfNeeded() {
     isPendingUIUpdate = false;
     updateUI();
   }
+}
+
+// Background Polling Fallback & Realtime Health Check for Mobile/Tablet Reliability
+function startBackgroundSyncAndHeartbeat() {
+  if (backgroundSyncTimer) clearInterval(backgroundSyncTimer);
+
+  // Background polling every 3.5 seconds
+  backgroundSyncTimer = setInterval(async () => {
+    // Check if document is currently visible
+    if (document.hidden) return;
+    
+    // Safety check for stale drag state (older than 3.5 seconds)
+    if (isDraggingSlot && dragSafetyTimeout === null) {
+      dragSafetyTimeout = setTimeout(() => {
+        if (isDraggingSlot) {
+          console.warn('[Drag Safety] Drag operation timed out in background check. Resetting isDraggingSlot flag.');
+          isDraggingSlot = false;
+          dragType = null;
+          flushPendingUIUpdateIfNeeded();
+        }
+        dragSafetyTimeout = null;
+      }, 3500);
+    }
+
+    // Flush any pending UI updates if no modal/drag is active
+    flushPendingUIUpdateIfNeeded();
+
+    // Pull latest state from Supabase if not actively interacting
+    if (!isAnyModalActive() && !isDraggingSlot && !isFlushingRpcQueue) {
+      await pullStateFromSupabase({ silent: true });
+    }
+
+    // Realtime WebSocket Health Check
+    const now = Date.now();
+    const isSocketStale = (now - lastRealtimeMessageTime > 25000); // 25s without realtime updates
+    const isChannelClosed = !supabaseChannel || supabaseChannel.state === 'closed' || supabaseChannel.state === 'errored';
+
+    if (isChannelClosed || (isSocketStale && supabaseClient)) {
+      console.log('[Heartbeat] Realtime channel inactive/closed. Reconnecting WebSocket...');
+      setupSupabaseRealtime();
+    }
+  }, 3500);
 }
 
 
@@ -478,6 +526,7 @@ async function initApp() {
 
   setupEventListeners();
   setupSupabaseRealtime();
+  startBackgroundSyncAndHeartbeat();
   updateUI();
   startClock();
 
@@ -525,6 +574,8 @@ function setupSupabaseRealtime() {
         filter: 'id=eq.global'
       },
       (payload) => {
+        lastRealtimeMessageTime = Date.now();
+        updateConnectionStatus('SUBSCRIBED');
         const newData = payload.new.data;
         if (newData) {
           if (newData.state) Object.assign(state, newData.state);
@@ -555,8 +606,9 @@ function setupSupabaseRealtime() {
   supabaseChannel.subscribe((status, err) => {
     console.log("Supabase Realtime subscribe status:", status);
     if (status === 'SUBSCRIBED') {
+      lastRealtimeMessageTime = Date.now();
       updateConnectionStatus('SUBSCRIBED');
-      pullStateFromSupabase();
+      pullStateFromSupabase({ silent: true });
     } else if (status === 'TIMED_OUT' || status === 'CLOSED' || status === 'CHANNEL_ERROR') {
       updateConnectionStatus('disconnected');
     }
@@ -2139,6 +2191,17 @@ function setupEventListeners() {
     isLongPress = false;
     isDraggingSlot = true;
     
+    if (dragSafetyTimeout) clearTimeout(dragSafetyTimeout);
+    dragSafetyTimeout = setTimeout(() => {
+      if (isDraggingSlot) {
+        console.warn('[Drag Safety] Drag operation auto-cancelled after 3.5s.');
+        isDraggingSlot = false;
+        dragType = null;
+        flushPendingUIUpdateIfNeeded();
+      }
+      dragSafetyTimeout = null;
+    }, 3500);
+    
     const magnet = e.target.closest('.slot-magnet');
     const cell = e.target.closest('.director-left-cell');
     
@@ -2159,6 +2222,10 @@ function setupEventListeners() {
       if (activeTab === 'all') {
         e.preventDefault();
         isDraggingSlot = false;
+        if (dragSafetyTimeout) {
+          clearTimeout(dragSafetyTimeout);
+          dragSafetyTimeout = null;
+        }
         return;
       }
       dragType = 'row';
@@ -2173,6 +2240,10 @@ function setupEventListeners() {
   // Drag end
   boardWrapper.addEventListener('dragend', (e) => {
     isDraggingSlot = false;
+    if (dragSafetyTimeout) {
+      clearTimeout(dragSafetyTimeout);
+      dragSafetyTimeout = null;
+    }
     if (dragType === 'magnet') {
       const magnet = e.target.closest('.slot-magnet');
       if (magnet) {
@@ -2534,11 +2605,11 @@ function setupEventListeners() {
   const handleVisibilityOrFocus = () => {
     if (document.visibilityState === 'visible') {
       const now = Date.now();
-      if (now - lastWakeupSyncTime < 2000) return; // Cooldown of 2 seconds
+      if (now - lastWakeupSyncTime < 1500) return; // Cooldown of 1.5 seconds
       lastWakeupSyncTime = now;
       
       console.log('[Visibility Change] Tab became active/focused. Syncing state and reconnecting...');
-      pullStateFromSupabase();
+      pullStateFromSupabase({ silent: true });
       setupSupabaseRealtime();
 
       const dObj = new Date();
@@ -2552,6 +2623,37 @@ function setupEventListeners() {
 
   document.addEventListener('visibilitychange', handleVisibilityOrFocus);
   window.addEventListener('focus', handleVisibilityOrFocus);
+
+  // Mobile / Tablet touch safety listeners to prevent UI lock and trigger touch-based sync
+  window.addEventListener('touchstart', () => {
+    const now = Date.now();
+    if (now - lastUserTouchTime > 5000) {
+      lastUserTouchTime = now;
+      if (!isAnyModalActive() && !isDraggingSlot && !isFlushingRpcQueue) {
+        pullStateFromSupabase({ silent: true });
+      }
+    }
+  }, { passive: true });
+
+  window.addEventListener('touchend', (e) => {
+    if (e.touches && e.touches.length === 0 && isDraggingSlot) {
+      setTimeout(() => {
+        if (isDraggingSlot) {
+          isDraggingSlot = false;
+          dragType = null;
+          flushPendingUIUpdateIfNeeded();
+        }
+      }, 100);
+    }
+  }, { passive: true });
+
+  window.addEventListener('touchcancel', () => {
+    if (isDraggingSlot) {
+      isDraggingSlot = false;
+      dragType = null;
+      flushPendingUIUpdateIfNeeded();
+    }
+  }, { passive: true });
 
   // Start Treatment Modal Button Listeners
   const btnStartDirect = document.getElementById('btn-start-direct');
@@ -3446,12 +3548,12 @@ function closeLeaveTimeModal() {
   flushPendingUIUpdateIfNeeded();
 }
 
-// Fetch latest state from Supabase and redraw UI (used for manual/automatic reconnect syncing)
-async function pullStateFromSupabase() {
+// Fetch latest state from Supabase and redraw UI (used for manual/automatic reconnect syncing and polling)
+async function pullStateFromSupabase({ silent = false } = {}) {
   if (!supabaseClient) return;
   
   try {
-    console.log('[Sync] Pulling latest state from Supabase...');
+    if (!silent) console.log('[Sync] Pulling latest state from Supabase...');
     const { data: dbRow, error } = await supabaseClient
       .from('clinic_state')
       .select('data')
@@ -3498,14 +3600,14 @@ async function pullStateFromSupabase() {
       } else {
         updateUI();
       }
-      console.log('[Sync] State pull complete.');
+      if (!silent) console.log('[Sync] State pull complete.');
     } else {
-      console.error('[Sync] Error pulling state from Supabase:', error);
+      if (!silent) console.error('[Sync] Error pulling state from Supabase:', error);
       isLoadedFromSupabase = false;
       showOfflineBanner();
     }
   } catch (e) {
-    console.error('[Sync] Exception pulling state from Supabase:', e);
+    if (!silent) console.error('[Sync] Exception pulling state from Supabase:', e);
     isLoadedFromSupabase = false;
     showOfflineBanner();
   }
