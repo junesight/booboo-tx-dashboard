@@ -1645,8 +1645,13 @@ function isConsultationRoomTreatment(val) {
     if (clean.endsWith('_reserved')) {
       clean = clean.substring(0, clean.length - 9);
     }
+    clean = clean.replace(/<br\s*[\/]?>/gi, '').trim();
   }
-  return ['상담', '린다이어트', '한약상담', '추나', '초음파', '자하거/디나'].includes(clean);
+  const consultList = [
+    '상담', '한약상담', '린다이어트', '린다', '추나', '초음파',
+    '자하거/디나', '자하거디나', '자하거', '디나'
+  ];
+  return consultList.includes(clean);
 }
 
 // Helper to determine if a value is a Treatment Room (Bed) treatment
@@ -1660,10 +1665,11 @@ function isBedTreatment(val) {
     if (clean.endsWith('_reserved')) {
       clean = clean.substring(0, clean.length - 9);
     }
-    if (clean.startsWith('사혈_') || clean === '사혈') {
+    if (clean.startsWith('사혈_')) {
       return true;
     }
   }
+  if (clean === '사혈') return true;
   const parsed = parseInt(clean, 10);
   return !isNaN(parsed) && String(parsed) === String(clean);
 }
@@ -1671,6 +1677,12 @@ function isBedTreatment(val) {
 // Handle cross-ward routing and standard queue shifts when an item is cleared from index 0
 function handleQueueShift(ward, docName, index, clearedValue) {
   if (index !== 0 || !clearedValue) return null;
+  
+  // Custom Rule: If cleared item was a consultation room treatment or meal, NEVER auto-advance to next item or across wards
+  if (isConsultationRoomTreatment(clearedValue) || isMealTreatment(clearedValue)) {
+    console.log(`[Queue Routing] Cleared consultation/meal treatment (${clearedValue}). Halting auto-advance completely.`);
+    return null;
+  }
   
   let cleanVal = clearedValue;
   if (typeof clearedValue === 'string' && clearedValue.endsWith('_progress')) {
@@ -1696,12 +1708,6 @@ function handleQueueShift(ward, docName, index, clearedValue) {
   const nextItem = state[ward][docName][0];
   if (nextItem !== null && nextItem !== undefined) {
     if (typeof nextItem !== 'string' || !nextItem.endsWith('_progress')) {
-      // Custom Rule: If transitioning from consultation room treatment to bed treatment, block auto-advance
-      if (isConsultationRoomTreatment(clearedValue) && isBedTreatment(nextItem)) {
-        console.log(`[Queue Routing] Reached bed treatment ${nextItem} after consultation treatment ${clearedValue}. Stopping auto-advance.`);
-        return null;
-      }
-      
       console.log(`[Queue Routing] Auto-transitioning next item ${nextItem} to progress in current ward ${ward}.`);
       state[ward][docName][0] = String(nextItem) + '_progress';
       clearOtherWardsProgress(docName, ward);
@@ -2082,7 +2088,7 @@ function setupEventListeners() {
               console.log(`[Pause Logic] Click handler: Cleared current item and encountered pause button at index 1. Removing both, setting status to 콜 가능, and halting progress.`);
             } else {
               setDoctorStatusOnTreatmentEnd(docName, clearedVal, ward);
-              if (isMealTreatment(clearedVal)) {
+              if (isMealTreatment(clearedVal) || isConsultationRoomTreatment(clearedVal)) {
                 state[ward][docName].splice(index, 1);
                 compactRowState(ward, docName);
               } else if (state[ward][docName][1] && isArrowItem(state[ward][docName][1])) {
@@ -3209,8 +3215,11 @@ function setDoctorStatusOnTreatmentEnd(docName, clearedVal, ward = null) {
   if (typeof cleanVal === 'string' && cleanVal.startsWith('사혈_')) {
     cleanVal = '사혈';
   }
+  if (typeof cleanVal === 'string') {
+    cleanVal = cleanVal.replace(/<br\s*[\/]?>/gi, '').trim();
+  }
   
-  const consultationTreatments = ['상담', '한약상담', '린다이어트'];
+  const consultationTreatments = ['상담', '한약상담', '린다이어트', '린다'];
   
   // Calculate progress duration (in ms) to detect accidental calls/clears under 30 seconds
   let durationMs = Infinity;
@@ -3261,7 +3270,7 @@ function clearActiveSlot() {
       
       if (wasProgress) {
         setDoctorStatusOnTreatmentEnd(docName, clearedVal, ward);
-        const progressedWard = isMealTreatment(clearedVal)
+        const progressedWard = (isMealTreatment(clearedVal) || isConsultationRoomTreatment(clearedVal))
           ? null
           : handleQueueShift(ward, docName, index, clearedVal);
         if (progressedWard) notifyNextTreatmentStart(docName, progressedWard);
