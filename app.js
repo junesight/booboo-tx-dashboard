@@ -48,7 +48,7 @@ function getDoctorComputedStatus(docName) {
     let cleanVal = progressVal.slice(0, -9);
     if (cleanVal.endsWith('_reserved')) cleanVal = cleanVal.slice(0, -9);
     if (cleanVal.startsWith('사혈_')) cleanVal = '사혈';
-    const consultationTreatments = ['상담', '한약상담', '린다이어트'];
+    const consultationTreatments = ['상담', '한약상담', '린다이어트', '린다'];
     if (cleanVal === '식사' || cleanVal === '🍱') return '자리비움';
     if (consultationTreatments.includes(cleanVal)) return '상담중';
     return '치료중';
@@ -943,7 +943,7 @@ function updateUI() {
       if (cleanVal.startsWith('사혈_')) {
         cleanVal = '사혈';
       }
-      const consultationTreatments = ['상담', '한약상담', '린다이어트'];
+      const consultationTreatments = ['상담', '한약상담', '린다이어트', '린다'];
       if (cleanVal === '식사' || cleanVal === '🍱') {
         computedStatus = '자리비움';
       } else if (consultationTreatments.includes(cleanVal)) {
@@ -3220,8 +3220,9 @@ function setDoctorStatusOnTreatmentEnd(docName, clearedVal, ward = null) {
   }
   
   const consultationTreatments = ['상담', '한약상담', '린다이어트', '린다'];
+  const officeTreatments = ['초음파', '자하거/디나', '자하거디나', '자하거', '디나', '추나'];
   
-  // Calculate progress duration (in ms) to detect accidental calls/clears under 30 seconds
+  // Calculate progress duration (in ms) to detect accidental calls/clears under 30 seconds for bed treatments
   let durationMs = Infinity;
   if (ward && progressTimes[`${ward}|${docName}|${cleanVal}`]) {
     durationMs = Date.now() - progressTimes[`${ward}|${docName}|${cleanVal}`];
@@ -3235,16 +3236,18 @@ function setDoctorStatusOnTreatmentEnd(docName, clearedVal, ward = null) {
     }
   }
 
-  const isAccidentalClear = durationMs < 30000;
-  
   if (cleanVal === '식사') {
     directorStatuses[docName] = '자리비움';
-  } else if (isAccidentalClear || directorAutoStatus[docName] === true) {
-    directorStatuses[docName] = '콜 가능';
-    console.log(`[Status Transition] ${docName}: Treatment '${cleanVal}' ended within ${Math.round(durationMs / 1000)}s (< 30s). Auto-reverting to '콜 가능'.`);
+  } else if (consultationTreatments.includes(cleanVal)) {
+    directorStatuses[docName] = '차팅중';
+  } else if (officeTreatments.includes(cleanVal)) {
+    directorStatuses[docName] = '준비중';
   } else {
-    if (consultationTreatments.includes(cleanVal)) {
-      directorStatuses[docName] = '차팅중';
+    // Bed treatments (1, 2, 3..., 사혈)
+    const isAccidentalClear = durationMs < 30000;
+    if (isAccidentalClear || directorAutoStatus[docName] === true) {
+      directorStatuses[docName] = '콜 가능';
+      console.log(`[Status Transition] ${docName}: Bed treatment '${cleanVal}' ended within ${Math.round(durationMs / 1000)}s (< 30s). Auto-reverting to '콜 가능'.`);
     } else {
       directorStatuses[docName] = '준비중';
     }
