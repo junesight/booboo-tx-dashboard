@@ -1696,6 +1696,12 @@ function handleQueueShift(ward, docName, index, clearedValue) {
     const targetItem = state[targetWard][docName][0];
     if (targetItem !== null && targetItem !== undefined) {
       if (typeof targetItem !== 'string' || !targetItem.endsWith('_progress')) {
+        if (isConsultationRoomTreatment(targetItem) || isMealTreatment(targetItem)) {
+          console.log(`[Queue Routing] Target item is consultation/meal (${targetItem}). Stopping auto-advance and setting to 준비중.`);
+          directorStatuses[docName] = '준비중';
+          saveStateField(['directorStatuses', docName], '준비중');
+          return null;
+        }
         console.log(`[Queue Routing] Routing in-progress from ${ward} to ${targetWard} for ${docName}. Setting item ${targetItem} to progress.`);
         state[targetWard][docName][0] = String(targetItem) + '_progress';
         clearOtherWardsProgress(docName, targetWard);
@@ -1708,6 +1714,12 @@ function handleQueueShift(ward, docName, index, clearedValue) {
   const nextItem = state[ward][docName][0];
   if (nextItem !== null && nextItem !== undefined) {
     if (typeof nextItem !== 'string' || !nextItem.endsWith('_progress')) {
+      if (isConsultationRoomTreatment(nextItem) || isMealTreatment(nextItem)) {
+        console.log(`[Queue Routing] Next item in current ward is consultation/meal (${nextItem}). Stopping auto-advance and setting to 준비중.`);
+        directorStatuses[docName] = '준비중';
+        saveStateField(['directorStatuses', docName], '준비중');
+        return null;
+      }
       console.log(`[Queue Routing] Auto-transitioning next item ${nextItem} to progress in current ward ${ward}.`);
       state[ward][docName][0] = String(nextItem) + '_progress';
       clearOtherWardsProgress(docName, ward);
@@ -3244,12 +3256,18 @@ function setDoctorStatusOnTreatmentEnd(docName, clearedVal, ward = null) {
     directorStatuses[docName] = '준비중';
   } else {
     // Bed treatments (1, 2, 3..., 사혈)
-    const isAccidentalClear = durationMs < 30000;
-    if (isAccidentalClear || directorAutoStatus[docName] === true) {
-      directorStatuses[docName] = '콜 가능';
-      console.log(`[Status Transition] ${docName}: Bed treatment '${cleanVal}' ended within ${Math.round(durationMs / 1000)}s (< 30s). Auto-reverting to '콜 가능'.`);
-    } else {
+    const nextVal = findNextTreatmentRaw(ward || 'female', docName);
+    if (nextVal && isConsultationRoomTreatment(nextVal)) {
       directorStatuses[docName] = '준비중';
+      console.log(`[Status Transition] ${docName}: Bed treatment ended, next item is consultation/office '${nextVal}'. Setting status to '준비중'.`);
+    } else {
+      const isAccidentalClear = durationMs < 30000;
+      if (isAccidentalClear || directorAutoStatus[docName] === true) {
+        directorStatuses[docName] = '콜 가능';
+        console.log(`[Status Transition] ${docName}: Bed treatment '${cleanVal}' ended within ${Math.round(durationMs / 1000)}s (< 30s). Auto-reverting to '콜 가능'.`);
+      } else {
+        directorStatuses[docName] = '준비중';
+      }
     }
   }
   saveStateField(['directorStatuses', docName], directorStatuses[docName]);
