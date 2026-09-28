@@ -1787,8 +1787,8 @@ function showConfirmModal(title, text, confirmCallback) {
   
   if (!modal || !titleEl || !instructionEl || !btnYes || !btnNo) return;
   
-  titleEl.textContent = title;
-  instructionEl.textContent = text;
+  titleEl.innerHTML = title;
+  instructionEl.innerHTML = text;
   
   // Clone nodes to discard older event listeners
   const newBtnYes = btnYes.cloneNode(true);
@@ -2690,32 +2690,42 @@ function setupEventListeners() {
         if (cleanVal.startsWith('사혈_')) cleanVal = cleanVal.slice(3);
         const isMeal = (cleanVal === '식사' || cleanVal === '🍱');
 
-        // If doctor is NOT in '콜 가능' status and item is NOT '식사', prompt for Call Reservation
+        const executeStartDirect = () => {
+          delete reservedDoctorCalls[docName];
+          localStorage.setItem('clinic_reserved_doctor_calls', JSON.stringify(reservedDoctorCalls));
+          state[ward][docName][index] = String(val) + '_progress';
+          clearOtherWardsProgress(docName, ward);
+          notifyInitialTreatmentStart(docName, ward);
+
+          if (isMeal) {
+            directorStatuses[docName] = '자리비움';
+            localStorage.setItem('clinic_director_statuses', JSON.stringify(directorStatuses));
+            if (supabaseClient) {
+              saveStateField(['directorStatuses', docName], '자리비움');
+            }
+          }
+
+          saveStateForDoctor(docName);
+          if (supabaseClient) {
+            saveStateField(['reservedDoctorCalls'], reservedDoctorCalls);
+          }
+          updateUI();
+        };
+
+        // If doctor is NOT in '콜 가능' status (e.g. 차팅중, 준비중, 자리비움) and item is NOT '식사', show confirmation modal
         if (!isMeal && currentStatus !== '콜 가능') {
           closeStartTreatmentModal();
-          openCallReserveModal(ward, docName, index, val, currentStatus);
+          showConfirmModal(
+            '치료 개시 확인',
+            `현재 <strong>${currentStatus}</strong> 상태입니다.<br><br>바로 시작하시겠습니까?`,
+            () => {
+              executeStartDirect();
+            }
+          );
           return;
         }
 
-        delete reservedDoctorCalls[docName];
-        localStorage.setItem('clinic_reserved_doctor_calls', JSON.stringify(reservedDoctorCalls));
-        state[ward][docName][index] = String(val) + '_progress';
-        clearOtherWardsProgress(docName, ward);
-        notifyInitialTreatmentStart(docName, ward);
-
-        if (isMeal) {
-          directorStatuses[docName] = '자리비움';
-          localStorage.setItem('clinic_director_statuses', JSON.stringify(directorStatuses));
-          if (supabaseClient) {
-            saveStateField(['directorStatuses', docName], '자리비움');
-          }
-        }
-
-        saveStateForDoctor(docName);
-        if (supabaseClient) {
-          saveStateField(['reservedDoctorCalls'], reservedDoctorCalls);
-        }
-        updateUI();
+        executeStartDirect();
       }
       closeStartTreatmentModal();
     });
