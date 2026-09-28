@@ -2683,16 +2683,27 @@ function setupEventListeners() {
     btnStartDirect.addEventListener('click', () => {
       if (startTreatmentData) {
         const { ward, docName, index, val } = startTreatmentData;
+        const currentStatus = getDoctorComputedStatus(docName);
+
+        let cleanVal = String(val);
+        if (cleanVal.endsWith('_reserved')) cleanVal = cleanVal.slice(0, -9);
+        if (cleanVal.startsWith('사혈_')) cleanVal = cleanVal.slice(3);
+        const isMeal = (cleanVal === '식사' || cleanVal === '🍱');
+
+        // If doctor is NOT in '콜 가능' status and item is NOT '식사', prompt for Call Reservation
+        if (!isMeal && currentStatus !== '콜 가능') {
+          closeStartTreatmentModal();
+          openCallReserveModal(ward, docName, index, val, currentStatus);
+          return;
+        }
+
         delete reservedDoctorCalls[docName];
         localStorage.setItem('clinic_reserved_doctor_calls', JSON.stringify(reservedDoctorCalls));
         state[ward][docName][index] = String(val) + '_progress';
         clearOtherWardsProgress(docName, ward);
         notifyInitialTreatmentStart(docName, ward);
 
-        let cleanVal = String(val);
-        if (cleanVal.endsWith('_reserved')) cleanVal = cleanVal.slice(0, -9);
-        if (cleanVal.startsWith('사혈_')) cleanVal = cleanVal.slice(3);
-        if (cleanVal === '식사' || cleanVal === '🍱') {
+        if (isMeal) {
           directorStatuses[docName] = '자리비움';
           localStorage.setItem('clinic_director_statuses', JSON.stringify(directorStatuses));
           if (supabaseClient) {
