@@ -1872,20 +1872,20 @@ function openCallReserveModal(ward, docName, index, val, currentStatus) {
     textEl.innerHTML = `[${docName} 원장님 (${currentStatus}) - ${targetName}]`;
   }
 
-  if (currentStatus === '자리비움') {
-    if (titleEl) titleEl.textContent = '원장님 호출 불가';
-    if (msgEl) msgEl.innerHTML = '콜 가능 상태가 아닙니다.';
-    if (btnConfirm) btnConfirm.style.display = 'none';
+  if (currentStatus === '차팅중' || currentStatus === '준비중') {
+    if (titleEl) titleEl.textContent = '원장님 호출 예약';
+    if (msgEl) msgEl.innerHTML = `현재 <strong>${currentStatus}</strong> 상태입니다.<br>콜 가능 상태로 바뀌면 곧바로 콜을 보내도록 예약하시겠습니까?`;
+    if (btnConfirm) btnConfirm.style.display = 'block';
     if (btnCancel) {
-      btnCancel.textContent = '확인';
+      btnCancel.textContent = '취소';
       btnCancel.style.display = 'block';
     }
   } else {
-    if (titleEl) titleEl.textContent = '원장님 호출 예약';
-    if (msgEl) msgEl.innerHTML = '콜 가능 상태가 아닙니다.<br>콜 가능 상태로 바뀌면 곧바로 콜을 보내도록 예약하시겠습니까?';
-    if (btnConfirm) btnConfirm.style.display = 'block';
+    if (titleEl) titleEl.textContent = '원장님 호출 불가';
+    if (msgEl) msgEl.innerHTML = `현재 <strong>${currentStatus}</strong> 상태입니다.<br>차팅중 또는 준비중 상태일 때만 콜 예약이 가능합니다.`;
+    if (btnConfirm) btnConfirm.style.display = 'none';
     if (btnCancel) {
-      btnCancel.textContent = '일단 취소 후 다시 콜';
+      btnCancel.textContent = '확인';
       btnCancel.style.display = 'block';
     }
   }
@@ -2743,7 +2743,31 @@ function setupEventListeners() {
         // If doctor is NOT in '콜 가능' status and item is NOT '식사', prompt for Call Reservation / Notice
         if (!isMeal && currentStatus !== '콜 가능') {
           closeStartTreatmentModal();
-          openCallReserveModal(ward, docName, index, val, currentStatus);
+          if (currentStatus === '치료중' || currentStatus === '상담중') {
+            showConfirmModal(
+              '호출 불가 안내',
+              `현재 <strong>[${docName} 원장님]</strong>이 <strong>${currentStatus}</strong> 상태입니다.<br><br>진행 중인 ${currentStatus === '상담중' ? '상담' : '치료'}이 완료된 후 호출해 주세요.`,
+              null
+            );
+            return;
+          }
+          if (currentStatus === '자리비움' || currentStatus === '휴진') {
+            showConfirmModal(
+              '호출 불가 안내',
+              `현재 <strong>[${docName} 원장님]</strong>이 <strong>${currentStatus}</strong> 상태입니다.`,
+              null
+            );
+            return;
+          }
+          if (currentStatus === '차팅중' || currentStatus === '준비중') {
+            openCallReserveModal(ward, docName, index, val, currentStatus);
+            return;
+          }
+          showConfirmModal(
+            '호출 불가 안내',
+            `현재 <strong>[${docName} 원장님]</strong>이 <strong>${currentStatus}</strong> 상태여서 호출 또는 예약할 수 없습니다.`,
+            null
+          );
           return;
         }
         
@@ -2837,6 +2861,13 @@ function setupEventListeners() {
     btnCallReserveConfirm.addEventListener('click', async () => {
       if (pendingCallReserveData) {
         const { ward, docName, index, val } = pendingCallReserveData;
+        const currentStatus = getDoctorComputedStatus(docName);
+        if (currentStatus !== '차팅중' && currentStatus !== '준비중') {
+          closeCallReserveModal();
+          showConfirmModal('예약 불가', `원장님이 현재 <strong>${currentStatus}</strong> 상태이므로 콜 예약을 등록할 수 없습니다.`, null);
+          return;
+        }
+
         reservedDoctorCalls[docName] = {
           ward,
           docName,
