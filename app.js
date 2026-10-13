@@ -63,9 +63,19 @@ let isDraggingSlot = false;
 const pendingRpcQueue = [];
 let isFlushingRpcQueue = false;
 
-// Background Polling & Realtime Heartbeat state
+// Realtime is primary; periodic reads are a safety net, not a heartbeat.
+const SYNC_FALLBACK_INTERVAL_MS = 3500;
+const SYNC_AUDIT_INTERVAL_MS = 60000;
+const REALTIME_RECONNECT_INTERVAL_MS = 15000;
+const STATE_PULL_TIMEOUT_MS = 10000;
 let backgroundSyncTimer = null;
-let lastRealtimeMessageTime = Date.now();
+let realtimeSubscribed = false;
+let realtimeSetupInProgress = false;
+let lastRealtimeSetupTime = 0;
+let lastSuccessfulPullTime = 0;
+let statePullPromise = null;
+let stateSyncRevision = 0;
+let syncConnectionListenersBound = false;
 let lastUserTouchTime = 0;
 let dragSafetyTimeout = null;
 
@@ -90,12 +100,44 @@ function flushPendingUIUpdateIfNeeded() {
   }
 }
 
-// Background Polling Fallback & Realtime Health Check for Mobile/Tablet Reliability
+function isRealtimeConnected() {
+  return Boolean(realtimeSubscribed && supabaseChannel?.state === 'joined'
+    && supabaseClient?.realtime.isConnected());
+}
+
+function ensureSupabaseRealtime() {
+  if (!supabaseClient || navigator.onLine === false || realtimeSetupInProgress) return;
+  // Let the SDK handle reconnecting an existing channel. Replace only failed/closed
+  // channels, with a cooldown, never because the clinic has no new changes.
+  const needsChannel = !supabaseChannel || ['closed', 'errored'].includes(supabaseChannel.state);
+  if (needsChannel && Date.now() - lastRealtimeSetupTime >= REALTIME_RECONNECT_INTERVAL_MS) {
+    setupSupabaseRealtime();
+  }
+}
+
+async function resumeSupabaseSync() {
+  if (document.hidden || navigator.onLine === false) return;
+  await flushPendingRpcQueue();
+  // Preserve unsent edits if the server is still unavailable.
+  if (pendingRpcQueue.length === 0) await pullStateFromSupabase({ silent: true });
+  ensureSupabaseRealtime();
+}
+
+// Background polling fallback and local UI safety checks for tablets.
 function startBackgroundSyncAndHeartbeat() {
   if (backgroundSyncTimer) clearInterval(backgroundSyncTimer);
 
-  // Background polling every 3.5 seconds
-  backgroundSyncTimer = setInterval(async () => {
+  if (!syncConnectionListenersBound) {
+    syncConnectionListenersBound = true;
+    window.addEventListener('online', resumeSupabaseSync);
+    window.addEventListener('offline', () => {
+      realtimeSubscribed = false;
+      updateConnectionStatus('disconnected');
+    });
+  }
+
+  // The timer still checks local drag/UI state; most ticks make no API request.
+  backgroundSyncTimer = setInterval(() => {
     // Check if document is currently visible
     if (document.hidden) return;
     
@@ -115,21 +157,17 @@ function startBackgroundSyncAndHeartbeat() {
     // Flush any pending UI updates if no modal/drag is active
     flushPendingUIUpdateIfNeeded();
 
-    // Pull latest state from Supabase if not actively interacting
-    if (!isAnyModalActive() && !isDraggingSlot && !isFlushingRpcQueue) {
-      await pullStateFromSupabase({ silent: true });
+    if (navigator.onLine === false) return;
+    if (pendingRpcQueue.length > 0 && !isFlushingRpcQueue) {
+      resumeSupabaseSync();
     }
-
-    // Realtime WebSocket Health Check
-    const now = Date.now();
-    const isSocketStale = (now - lastRealtimeMessageTime > 25000); // 25s without realtime updates
-    const isChannelClosed = !supabaseChannel || supabaseChannel.state === 'closed' || supabaseChannel.state === 'errored';
-
-    if (isChannelClosed || (isSocketStale && supabaseClient)) {
-      console.log('[Heartbeat] Realtime channel inactive/closed. Reconnecting WebSocket...');
-      setupSupabaseRealtime();
+    const interval = isRealtimeConnected() ? SYNC_AUDIT_INTERVAL_MS : SYNC_FALLBACK_INTERVAL_MS;
+    if (!isAnyModalActive() && !isDraggingSlot && !isFlushingRpcQueue && pendingRpcQueue.length === 0
+      && Date.now() - lastSuccessfulPullTime >= interval) {
+      pullStateFromSupabase({ silent: true });
     }
-  }, 3500);
+    ensureSupabaseRealtime();
+  }, SYNC_FALLBACK_INTERVAL_MS);
 }
 
 
@@ -444,6 +482,7 @@ async function initApp() {
         .single();
         
       if (!error && dbRow && dbRow.data) {
+        lastSuccessfulPullTime = Date.now();
         isLoadedFromSupabase = true;
         hideOfflineBanner();
         const dbData = dbRow.data;
@@ -545,84 +584,93 @@ async function initApp() {
 }
 
 // Setup Supabase Realtime channel subscription to receive live updates
-function setupSupabaseRealtime() {
+async function setupSupabaseRealtime() {
   if (!supabaseClient) {
     updateConnectionStatus('local');
     return;
   }
+  if (realtimeSetupInProgress || navigator.onLine === false || isRealtimeConnected()) return;
+  realtimeSetupInProgress = true;
+  lastRealtimeSetupTime = Date.now();
+  realtimeSubscribed = false;
 
-  // Remove existing channel if any
-  if (supabaseChannel) {
-    try {
-      console.log('[Realtime] Removing existing subscription before reconnect...');
-      supabaseClient.removeChannel(supabaseChannel);
-    } catch (e) {
-      console.warn('[Realtime] Error removing old channel:', e);
+  try {
+    // Remove existing channel if any
+    if (supabaseChannel) {
+      const oldChannel = supabaseChannel;
+      supabaseChannel = null;
+      try {
+        console.log('[Realtime] Removing existing subscription before reconnect...');
+        await supabaseClient.removeChannel(oldChannel);
+      } catch (e) {
+        console.warn('[Realtime] Error removing old channel:', e);
+      }
     }
-  }
 
-  updateConnectionStatus('connecting');
+    updateConnectionStatus('connecting');
 
-  supabaseChannel = supabaseClient
-    .channel('public:clinic_state')
-    .on(
-      'postgres_changes',
-      {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'clinic_state',
-        filter: 'id=eq.global'
-      },
-      (payload) => {
-        lastRealtimeMessageTime = Date.now();
-        updateConnectionStatus('SUBSCRIBED');
-        const newData = payload.new.data;
-        if (newData) {
-          if (newData.state) Object.assign(state, newData.state);
-          if (newData.leaveTimes) Object.assign(leaveTimes, newData.leaveTimes);
-          if (newData.offDutyDirectors) Object.assign(offDutyDirectors, newData.offDutyDirectors);
-          if (newData.directorStatuses) Object.assign(directorStatuses, newData.directorStatuses);
-          if (newData.directorAutoStatus) Object.assign(directorAutoStatus, newData.directorAutoStatus);
-          if (newData.rowDirectorsFloor1) Object.assign(rowDirectorsFloor1, newData.rowDirectorsFloor1);
-          if (newData.rowDirectorsFloor2) Object.assign(rowDirectorsFloor2, newData.rowDirectorsFloor2);
-          if (newData.entryTimes) Object.assign(entryTimes, newData.entryTimes);
-          if (newData.progressTimes) Object.assign(progressTimes, newData.progressTimes);
-          if (newData.reservedDoctorCalls !== undefined) {
-            reservedDoctorCalls = Object.assign({}, newData.reservedDoctorCalls || {});
-          }
+    const channel = supabaseClient
+      .channel('public:clinic_state')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'clinic_state',
+          filter: 'id=eq.global'
+        },
+        (payload) => {
+          if (supabaseChannel !== channel) return;
+          stateSyncRevision++;
+          const newData = payload.new.data;
+          if (newData) {
+            isLoadedFromSupabase = true;
+            hideOfflineBanner();
+            if (newData.state) Object.assign(state, newData.state);
+            if (newData.leaveTimes) Object.assign(leaveTimes, newData.leaveTimes);
+            if (newData.offDutyDirectors) Object.assign(offDutyDirectors, newData.offDutyDirectors);
+            if (newData.directorStatuses) Object.assign(directorStatuses, newData.directorStatuses);
+            if (newData.directorAutoStatus) Object.assign(directorAutoStatus, newData.directorAutoStatus);
+            if (newData.rowDirectorsFloor1) Object.assign(rowDirectorsFloor1, newData.rowDirectorsFloor1);
+            if (newData.rowDirectorsFloor2) Object.assign(rowDirectorsFloor2, newData.rowDirectorsFloor2);
+            if (newData.entryTimes) Object.assign(entryTimes, newData.entryTimes);
+            if (newData.progressTimes) Object.assign(progressTimes, newData.progressTimes);
+            if (newData.reservedDoctorCalls !== undefined) {
+              reservedDoctorCalls = Object.assign({}, newData.reservedDoctorCalls || {});
+            }
           
-          sanitizeState(false);
-          checkAndTriggerReservedCalls();
+            sanitizeState(false);
+            checkAndTriggerReservedCalls();
           
-          if (isAnyModalActive() || isDraggingSlot) {
-            isPendingUIUpdate = true;
-          } else {
-            updateUI();
+            if (isAnyModalActive() || isDraggingSlot) {
+              isPendingUIUpdate = true;
+            } else {
+              updateUI();
+            }
           }
         }
+      );
+
+    supabaseChannel = channel;
+    channel.subscribe((status, err) => {
+      if (supabaseChannel !== channel) return;
+      console.log("Supabase Realtime subscribe status:", status);
+      realtimeSubscribed = status === 'SUBSCRIBED';
+      if (status === 'SUBSCRIBED') {
+        updateConnectionStatus('SUBSCRIBED');
+        resumeSupabaseSync();
+      } else if (status === 'TIMED_OUT' || status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+        updateConnectionStatus('disconnected');
       }
-    );
+    });
 
-  supabaseChannel.subscribe((status, err) => {
-    console.log("Supabase Realtime subscribe status:", status);
-    if (status === 'SUBSCRIBED') {
-      lastRealtimeMessageTime = Date.now();
-      updateConnectionStatus('SUBSCRIBED');
-      pullStateFromSupabase({ silent: true });
-    } else if (status === 'TIMED_OUT' || status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-      updateConnectionStatus('disconnected');
-    }
-  });
-
-  // Handle online/offline events for dynamic reconnect status updates
-  window.addEventListener('online', () => {
-    updateConnectionStatus('connecting');
-    flushPendingRpcQueue();
-    pullStateFromSupabase();
-  });
-  window.addEventListener('offline', () => {
+  } catch (error) {
+    realtimeSubscribed = false;
     updateConnectionStatus('disconnected');
-  });
+    console.warn('[Realtime] Could not set up channel:', error);
+  } finally {
+    realtimeSetupInProgress = false;
+  }
 }
 
 // Synchronize and maintain timestamps when slots first entered the board
@@ -725,6 +773,7 @@ async function safeRpcCall(path, value, retryCount = 3) {
 async function flushPendingRpcQueue() {
   if (isFlushingRpcQueue || pendingRpcQueue.length === 0 || !supabaseClient) return;
   isFlushingRpcQueue = true;
+  stateSyncRevision++;
   console.log(`[Supabase RPC] Flushing ${pendingRpcQueue.length} pending updates...`);
   while (pendingRpcQueue.length > 0) {
     const item = pendingRpcQueue[0];
@@ -748,6 +797,7 @@ async function flushPendingRpcQueue() {
 
 // Save a single JSONB field path to Supabase atomically via RPC (never overwrites other data)
 async function saveStateField(path, value) {
+  stateSyncRevision++;
   maintainEntryTimes();
   maintainProgressTimes();
   localStorage.setItem('clinic_treatment_state', JSON.stringify(state));
@@ -775,6 +825,7 @@ async function saveStateField(path, value) {
 
 // Save all ward states for a specific doctor atomically (never touches other doctors)
 async function saveStateForDoctor(docName) {
+  stateSyncRevision++;
   maintainEntryTimes();
   maintainProgressTimes();
   localStorage.setItem('clinic_treatment_state', JSON.stringify(state));
@@ -2626,9 +2677,8 @@ function setupEventListeners() {
       if (now - lastWakeupSyncTime < 1500) return; // Cooldown of 1.5 seconds
       lastWakeupSyncTime = now;
       
-      console.log('[Visibility Change] Tab became active/focused. Syncing state and reconnecting...');
-      pullStateFromSupabase({ silent: true });
-      setupSupabaseRealtime();
+      console.log('[Visibility Change] Tab became active/focused. Syncing latest state...');
+      resumeSupabaseSync();
 
       const dObj = new Date();
       const todayStr = `${dObj.getFullYear()}-${String(dObj.getMonth() + 1).padStart(2, '0')}-${String(dObj.getDate()).padStart(2, '0')}`;
@@ -2647,7 +2697,8 @@ function setupEventListeners() {
     const now = Date.now();
     if (now - lastUserTouchTime > 5000) {
       lastUserTouchTime = now;
-      if (!isAnyModalActive() && !isDraggingSlot && !isFlushingRpcQueue) {
+      if (!isRealtimeConnected() && navigator.onLine !== false && pendingRpcQueue.length === 0
+        && !isAnyModalActive() && !isDraggingSlot && !isFlushingRpcQueue) {
         pullStateFromSupabase({ silent: true });
       }
     }
@@ -3631,8 +3682,19 @@ function closeLeaveTimeModal() {
 }
 
 // Fetch latest state from Supabase and redraw UI (used for manual/automatic reconnect syncing and polling)
-async function pullStateFromSupabase({ silent = false } = {}) {
-  if (!supabaseClient) return;
+function pullStateFromSupabase(options = {}) {
+  if (!supabaseClient || navigator.onLine === false) return Promise.resolve(false);
+  if (statePullPromise) return statePullPromise;
+  statePullPromise = fetchStateFromSupabase(options).finally(() => {
+    statePullPromise = null;
+  });
+  return statePullPromise;
+}
+
+async function fetchStateFromSupabase({ silent = false } = {}) {
+  const revisionAtStart = stateSyncRevision;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), STATE_PULL_TIMEOUT_MS);
   
   try {
     if (!silent) console.log('[Sync] Pulling latest state from Supabase...');
@@ -3640,9 +3702,13 @@ async function pullStateFromSupabase({ silent = false } = {}) {
       .from('clinic_state')
       .select('data')
       .eq('id', 'global')
+      .abortSignal(controller.signal)
       .single();
-      
+
+    // An older REST response must not replace a newer event or local edit.
+    if (stateSyncRevision !== revisionAtStart) return false;
     if (!error && dbRow && dbRow.data) {
+      lastSuccessfulPullTime = Date.now();
       isLoadedFromSupabase = true;
       hideOfflineBanner();
       const dbData = dbRow.data;
@@ -3683,16 +3749,21 @@ async function pullStateFromSupabase({ silent = false } = {}) {
         updateUI();
       }
       if (!silent) console.log('[Sync] State pull complete.');
+      return true;
     } else {
       if (!silent) console.error('[Sync] Error pulling state from Supabase:', error);
       isLoadedFromSupabase = false;
       showOfflineBanner();
     }
   } catch (e) {
+    if (stateSyncRevision !== revisionAtStart) return false;
     if (!silent) console.error('[Sync] Exception pulling state from Supabase:', e);
     isLoadedFromSupabase = false;
     showOfflineBanner();
+  } finally {
+    clearTimeout(timeout);
   }
+  return false;
 }
 
 // Initialize on page load
